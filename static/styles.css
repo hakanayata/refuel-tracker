@@ -1,0 +1,79 @@
+body {
+    font-family: 'Roboto Condensed', sans-serif;
+}
+
+th {
+    /* color: #40eaf0; */
+    color: #40e1b0;
+}
+
+.account-links {
+    line-height: 2rem;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.account-links:hover {
+    background-color: gray;
+}
+
+.fit-vertically {
+    height: 83vh;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="submit"],
+input[type="datetime-local"],
+.form-select {
+    width: 280px;
+    background-color: #fbfbfb;
+}
+
+.btn {
+    width: 280px;
+}
+
+@media only screen and (max-width: 768px) {
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    input[type="submit"],
+    input[type="datetime-local"] {
+        width: 80% !important;
+        background-color: #fbfbfb;
+    }
+
+    .w-sm-100 {
+        width: 100% !important;
+    }
+
+    .w-sm-80 {
+        width: 80%;
+    }
+
+    .table {
+        font-size: 14px;
+    }
+
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    table * {
+        visibility: visible;
+        background-color: white !important;
+    }
+
+    table {
+        position: absolute;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}

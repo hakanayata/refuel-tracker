@@ -1,0 +1,206 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Home Page
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+{% endblock %}
+
+{% block main %}
+
+{% if vehicles %}
+<section>
+    <form action="/" autocomplete="off" method="post">
+        <div class="my-4">
+
+            <select class="form-select mx-auto w-sm-80 mb-4" name="vehicle">
+                <option selected value="{{ vehicles[0]['name'] }}">{{ vehicles[0]['name'] }}</option>
+                {% for vehicle in vehicles[1:] %}
+                <option value="{{ vehicle['name'] }}">{{ vehicle['name'] }}</option>
+                {% endfor %}
+            </select>
+            <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" name="distance"
+                placeholder="Current odometer reading" required>
+            <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" step="any" name="volume"
+                placeholder="Fuel volume added" required>
+            <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" step="any" name="price"
+                placeholder="Unit price" required>
+
+        </div>
+
+        <button class="btn btn-success w-sm-80 mx-auto mt-3 px-4"> Add Refuel </button>
+
+    </form>
+
+    <hr class="text-light mx-auto w-75 w-sm-80 mt-5">
+    <!-- <hr class="mx-auto w-25"> -->
+    {% if ref_len > 0 %}
+    <div class="table-responsive-sm">
+        <table
+            class="align-middle caption-top my-4 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
+
+            <caption>Most recent entries</caption>
+            <thead class="align-middle">
+                <tr>
+                    <th>#</th>
+                    {% if veh_len > 1 %}
+                    <th>Vehicle</th>
+                    {% endif %}
+                    <th>Date & Time</th>
+                    <th>Odometer Reading</th>
+                    <th>Fuel Volume Added</th>
+                    <th>Unit Price</th>
+                    <th>Total Price</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                {% for refuel in refuels %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    {% if veh_len > 1 %}
+                    <td>{{ refuel["vehicle_name"] }}</td>
+                    {% endif %}
+                    <td>{{ refuel["date"] | dt}}</td>
+                    <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
+                    <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
+                    <td>{{ refuel["price"] | cur(symbol) }}</td>
+                    <td>{{ refuel["total_price"] | cur(symbol) }}</td>
+                </tr>
+                {% endfor %}
+
+
+            </tbody>
+
+        </table>
+    </div>
+
+    <a href="/delete-refuel" class="btn btn-outline-danger px-3 mt-3 w-sm-80">Delete Refuel</a>
+
+</section>
+
+<hr class="text-light mx-auto w-75 w-sm-80 mt-5">
+
+{% if ref_len > 1 %}
+<table
+    class="align-middle caption-top my-2 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
+    <caption>Stats</caption>
+    <thead class="align-middle">
+        <tr>
+            {% if stats[0]["distance"] > 0 %}
+            <th>Vehicle</th>
+            <th>Total Distance Traveled</th>
+            <th>Total Fuel Volume Added</th>
+            <!-- <th>Avr. Cost <small>({{symbol}} / km)</small></th> -->
+            <!-- <th>Avr. Consumption <small>𝑙𝑡 / 100km</small> </th> -->
+            <th>Total Expenses</th>
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for stat in stats %}
+        <tr>
+            {% if stat["distance"] > 0 %}
+            <td>{{ stat["vehicle_name"] }}</td>
+            <td>{{ stat["distance"] | dist(distance_unit) }} </td>
+            <!-- <td>{{ (stat["expenses"] / stat["distance"]) | avr }}</td> -->
+            <!-- <td>{{ (stat["liters"] / (stat["distance"] / 100)) | avr }}</td> -->
+            <td>{{ stat["liters"] | vol(volume_unit) }}</td>
+            <td>{{ stat["expenses"] | cur(symbol) }}</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>
+
+
+<hr class="text-light mx-auto w-75 w-sm-80 my-5">
+{% endif %}
+
+
+<!-- <div class="my-4 mx-auto bg-light w-50">
+    <canvas id="myChart" height="100"></canvas>
+</div> -->
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="mx-auto w-75 w-sm-100">
+            <div class="card">
+                <div class="card-header bg-dark text-center">
+                    <p class="text-info">Refuels Chart (Last 3 months)</p>
+                </div>
+                <div style="background-color: lightgray" class="card-body">
+                    <canvas style="background-color: white" id="myChart"></canvas>
+                </div>
+                <!-- <div class="card-footer"></div> -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+            labels: {{ labels | safe }},
+    datasets: [{
+        axis: 'y',
+        label: 'Total Fuel Expense',
+        // data: [12, 19, 3, 5, 2, 3],
+        data: {{ values | safe }},
+        backgroundColor: [
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)',
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)'
+    ],
+        borderColor: [
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)',
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+    ],
+        borderWidth: 1
+            }]
+        },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        indexAxis: 'y',
+    }
+    });
+</script>
+
+{% endif %}
+
+{% else %}
+<h3 class="text-center text-light my-5">Welcome, {{ username }}!</h3>
+<h5 class="text-center text-light my-3">Please add a vehicle:</h5>
+<a class="btn btn-primary" href="/vehicles">Add Vehicle</a>
+{% endif %}
+{% endblock %}

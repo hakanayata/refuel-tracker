@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Change Units
+{% endblock %}
+
+{% block main %}
+
+<form action="/change-units" method="post">
+    <div class="mt-5 mb-2">
+        <select class="form-select mx-auto w-sm-80" name="currency">
+            <option disabled selected>Select Currency</option>
+            {% for currency in currencies %}
+            <option value="{{ currency }}">{{ currency }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="my-3">
+        <select class="form-select mx-auto w-sm-80" name="distance">
+            <option disabled selected>Select Distance Unit</option>
+            <option value="km">kilometer</option>
+            <option value="mi">mile</option>
+        </select>
+    </div>
+    <div class="my-3">
+        <select class="form-select mx-auto w-sm-80" name="volume">
+            <option disabled selected>Select Volume Unit</option>
+            <option value="lt">liter</option>
+            <option value="gal">gallon</option>
+        </select>
+    </div>
+    <button class="btn btn-outline-warning mt-3 mb-5 w-sm-80" type="submit">Save Changes</button>
+</form>
+
+{% endblock %}

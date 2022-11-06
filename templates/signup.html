@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Sign Up
+{% endblock %}
+
+{% block main %}
+
+<form action="/signup" autocomplete="off" method="post" class="mt-3">
+
+    <div class="mb-4">
+        <input class="form-control mx-auto w-sm-80" name="username" type="text" placeholder="Username">
+    </div>
+    <div class="mb-4">
+        <input class="form-control mx-auto w-sm-80" name="password" type="password" placeholder="Password">
+    </div>
+    <div class="mb-4">
+        <input class="form-control mx-auto w-sm-80" name="confirmation" type="password" placeholder="Password (again)">
+    </div>
+    <div class="d-grid gap-2 d-md-block mx-auto w-sm-80">
+        <button class="btn btn-success w-sm-80" type="submit">Sign Up</button>
+    </div>
+
+</form>
+{% endblock %}

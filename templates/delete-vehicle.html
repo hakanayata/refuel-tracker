@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Delete Vehicle
+{% endblock %}
+
+{% block main %}
+
+<form action="/delete-vehicle" method="post">
+    <div class="mt-5 mb-3">
+        <select class="form-select mx-auto w-auto w-sm-80" name="vehicle">
+            <option disabled selected>Vehicle</option>
+            {% for vehicle in vehicles %}
+            <option value="{{vehicle['name']}}">{{ vehicle["name"] }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button class="btn btn-danger mt-3 mb-5 w-sm-80" type="submit">Delete</button>
+</form>
+
+{% endblock %}

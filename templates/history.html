@@ -1,0 +1,144 @@
+{% extends "layout.html" %}
+
+{% block title %}
+History
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+{% endblock %}
+
+{% block main %}
+
+{% if ref_len > 0 %}
+
+<div class="container">
+    <div class="row">
+        <div class="mx-auto w-50 w-sm-100">
+            <div class="card">
+                <div class="card-header bg-dark text-center">
+                    <p class="text-info">Refuels Chart</p>
+                </div>
+                <div style="background-color: lightgray;" class="card-body">
+                    <canvas style="background-color: white" id="myChart"></canvas>
+                </div>
+                <!-- <div style="background-color: brown;" class="card-footer"></div> -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+            labels: {{ labels | safe }},
+    datasets: [{
+        axis: 'y',
+        label: 'Total Fuel Expense',
+        // data: [12, 19, 3, 5, 2, 3],
+        data: {{ values | safe }},
+        backgroundColor: [
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)',
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)'
+    ],
+        borderColor: [
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)',
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+    ],
+        borderWidth: 1
+            }]
+        },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        indexAxis: 'y',
+    }
+    });
+</script>
+
+<div class="table-responsive-sm">
+    <table
+        class="align-middle caption-top mt-5 mx-auto table table-dark table-bordered table-sm table-striped w-75 w-sm-100">
+        <caption>History of Refuels</caption>
+        <thead class="align-middle">
+            <tr>
+                <th>#</th>
+                {% if veh_len > 1 %}
+                <th>Vehicle</th>
+                {% endif %}
+                <th>Date</th>
+                <th>Odometer Reading</th>
+                <th>Fuel Volume Added</th>
+                <th>Unit Price</th>
+                <th>Total Price</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {% for refuel in refuels %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                {% if veh_len > 1 %}
+                <td>{{ refuel["vehicle_name"] }}</td>
+                {% endif %}
+                <td>{{ refuel["date"] | dt }}</td>
+                <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
+                <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
+                <td>{{ refuel["price"] | cur(symbol) }}</td>
+                <td>{{ refuel["total_price"] | cur(symbol) }}</td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+        <tfoot>
+            <tr>
+                {% if veh_len > 1 %}
+                <td class="border-0 fw-bold text-end ms-auto text-info" colspan="6">Grand Total:</td>
+                {% endif %}
+                {% if veh_len < 2 %} <td class="border-0 fw-bold text-end ms-auto text-info" colspan="5">Grand Total:
+                    </td>
+                    {% endif %}
+                    <td class="border-0 fw-bold text-center text-info"> {{ total_expenses | cur(symbol)}} </td>
+            </tr>
+        </tfoot>
+
+    </table>
+</div>
+<button onclick="window.print()" class="btn btn-outline-info px-4 my-4 mx-3 w-sm-80" id="savepdf" type="button">Save
+    PDF</button>
+<a href="/edit-refuel" class="btn btn-outline-warning px-3 my-4 mx-3 w-sm-80">Edit Refuel</a>
+<a href="/delete-refuel" class="btn btn-outline-danger my-4 mx-3 w-sm-80">Delete Refuel</a>
+{% else %}
+
+<h3 class="text-center text-light mt-5 mb-4">No entries to show.</h3>
+
+{% endif %}
+
+{% endblock %}

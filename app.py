@@ -1,0 +1,843 @@
+# from crypt import methods
+# from distutils.log import error
+# from passageidentity import Passage
+
+from crypt import methods
+import os
+import re
+
+from cs50 import SQL
+from flask import Flask, flash, redirect, render_template, request, session, Request, Response, url_for
+from flask_session import Session
+from tempfile import mkdtemp
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from helpers import errorMsg, login_required, dt, cur, avr, validate_password, dist, vol
+
+# Configure application
+app = Flask(__name__)
+
+# Ensure templates are auto-reloaded
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+# Custom filters from helpers.py
+app.jinja_env.filters["avr"] = avr
+app.jinja_env.filters["cur"] = cur
+app.jinja_env.filters["dist"] = dist
+app.jinja_env.filters["dt"] = dt
+app.jinja_env.filters["vol"] = vol
+
+# Configure session to use filesystem (instead of signed cookies)
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
+
+# Configure CS50 Library to use SQLite database
+# database replaced from local
+db = SQL("sqlite:///refueltracker.db")
+# to heroku
+# uri = os.getenv("DATABASE_URL")
+# if uri.startswith("postgres://"):
+#     uri = uri.replace("postgres://", "postgresql://")
+# db = SQL(uri)
+
+# Make sure API key is set
+# if not os.environ.get("API_KEY"):
+#     raise RuntimeError("API_KEY not set")
+
+
+# # Passage.id authentication implementation
+# PASSAGE_APP_ID = os.environ.get("PASSAGE_APP_ID")
+
+
+# class AuthenticationMiddleware(object):
+#     def __init__(self, app):
+#         self.app = app
+
+#     def __call__(self, environ, start_response):
+#         request = Request(environ)
+#         psg = Passage(PASSAGE_APP_ID)
+#         try:
+#             user = psg.authenticateRequest(request)
+#         except:
+#             ret = Response(u'Authorization failed',
+#                            mimetype='text/plain', status=401)
+#             return ret(environ, start_response)
+#         environ['user'] = user
+#         return self.app(environ, start_response)
+
+# ***** CONFIGURING ENDS HERE *****
+
+# ! with 2 cars added, if one of them only has 1 transaction, stats table on index page doesnt show table headers
+# ! edit vehicle entry, edit button at the end of each table row (users should be able to change the license plate, etc.)
+# ? after changing currency keep old transactions the way they were, only change next transactions
+# ? total distance traveled stat on vehicles page
+# ? odometer shouldn't be the same with the last transaction's
+
+
+@app.after_request
+def after_request(response):
+    """Ensure responses aren't cached"""
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Expires"] = 0
+    response.headers["Pragma"] = "no-cache"
+    return response
+
+
+@app.route("/", methods=["GET", "POST"])
+@login_required
+def index():
+    """Show last entries, let user add new entry"""
+    # retrieve username and unit settings
+    user_db = db.execute(
+        "SELECT * FROM users WHERE id=?", session["user_id"])
+    username = user_db[0]["username"]
+    currency_symbol = user_db[0]["currency"][-1]
+    distance_unit = user_db[0]["distance_unit"]
+    volume_unit = user_db[0]["volume_unit"]
+
+    # select vehicles to show in dropdown menu
+    vehicles = db.execute(
+        "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
+
+    # length of distinct vehicles's array, in order to hide/show tables in case no vehicle exist
+    # if there's more than 1 vehicle, show one more column (vehicle name) on page
+    vehicles_len = len(db.execute(
+        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
+
+    # retrieve last 3 entries from refuels table
+    refuels_db = db.execute(
+        "SELECT * FROM refuels WHERE user_id=? ORDER BY date DESC LIMIT 3", session["user_id"])
+
+    # length of refuels to show/hide tables (most recent entries & statistics table)
+    ref_len = len(refuels_db)
+
+    # query for total distance traveled & total liters & total expenses
+    statistics_db = db.execute(
+        "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_id", session["user_id"])
+
+    # abbrevations for chart
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    # query label (show day-month-year) and value (total fuel expense) to show on chart
+    chart_db = db.execute(
+        "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-3 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
+
+    labels = [months[int(x["date"][5:7]) - 1] for x in chart_db]
+    values = [x["total_price"] for x in chart_db]
+
+    # * GET carries request parameter appended in URL string (req from client to server in HTTP)
+    # user reached route via GET, as by clicking a link or via redirect()
+    if request.method == "GET":
+        return render_template("index.html", vehicles=vehicles, refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, username=username)
+
+    # * POST carries request parameter in message body
+    # user reached route via POST, as by submitting a form via POST
+    elif request.method == "POST":
+        date_db = db.execute("SELECT datetime('now', 'localtime')")
+        date = date_db[0]["datetime('now', 'localtime')"]
+
+        selected_vehicle = request.form.get("vehicle")
+        if not selected_vehicle:
+            return errorMsg("invalid vehicle!")
+
+        # ? if user has more than one car, list should also show vehicle_name field
+        selected_vehicle_db = db.execute(
+            "SELECT * FROM vehicles WHERE user_id=? AND name = ?", session["user_id"], selected_vehicle)
+        sel_vehicle_id = selected_vehicle_db[0]['id']
+        sel_vehicle_name = selected_vehicle_db[0]['name']
+
+        # current total distance traveled that can be read on the odometer (int type)
+        distance = request.form.get("distance")
+
+        # ensure distance exist, and it's bigger than zero, if so convert the value into integer
+        if not distance or not int(distance) > 0:
+            return errorMsg("invalid distance!")
+        else:
+            distance = int(distance)
+
+        # volume of refuel (float type)
+        volume = request.form.get("volume")
+
+        # ensure volume exist, and it's bigger than zero, if so convert the value into float
+        if not volume or not float(volume):
+            return errorMsg("invalid liter")
+        else:
+            volume = float(request.form.get("volume"))
+
+        # unit price of refuel (float type)
+        unit_price = request.form.get("price")
+
+        # ensure price exist, and it's greater than zero, if so convert the value into float
+        if not unit_price or not float(unit_price) > 0:
+            return errorMsg("invalid unit price")
+        else:
+            unit_price = float(unit_price)
+
+        # calculate total price
+        total_price = unit_price * volume
+
+        # insert new entry into database
+        try:
+            db.execute("INSERT INTO refuels (date, distance, volume, price, total_price, user_id, vehicle_id, vehicle_name) VALUES(?,?,?,?,?,?,?,?)",
+                       date, distance, volume, unit_price, total_price, session["user_id"], sel_vehicle_id, sel_vehicle_name)
+        except:
+            return errorMsg("Sorry, an error occured :(")
+
+        # select updated database after a new entry
+        refuels_upd_db = db.execute(
+            "SELECT * FROM refuels WHERE user_id=? ORDER BY date DESC LIMIT 3", session["user_id"])
+
+        # length of updated refuels rows
+        ref_len_upd = len(refuels_upd_db)
+
+        # length of updated vehicles rows
+        vehicles_len = len(db.execute(
+            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
+
+        # query updated statistics
+        statistics_db_upd = db.execute(
+            "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_id", session["user_id"])
+
+        # retrieve updated refuels to show on chart
+        chart_db_upd = db.execute(
+            "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-3 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
+
+        # updated chart's labes & values
+        labels_upd = [months[int(x["date"][5:7]) - 1] for x in chart_db_upd]
+        values_upd = [x["total_price"] for x in chart_db_upd]
+
+        return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, stats=statistics_db_upd, username=username)
+
+    # user reached route via PUT, DELETE
+    else:
+        return errorMsg("You're NOT authorized!")
+
+
+@app.route("/account")
+@login_required
+def account():
+    """Shows account settings"""
+    return render_template("account.html")
+
+
+@app.route("/change-units", methods=["GET", "POST"])
+@login_required
+def changeCur():
+    """Show currency settings"""
+
+    # available currency list
+    currencies = ['USD - $', 'EUR - €', 'GBP - £',
+                  'KRW - ₩', 'KZT - ₸', 'TRY - ₺']
+    # symbols = [x[-1] for x in currencies]
+
+    # user reached route via GET
+    if request.method == "GET":
+        return render_template("change-units.html", currencies=currencies)
+
+    # user reached route via POST
+    elif request.method == "POST":
+
+        # new currency setting submitted by user
+        selected_currency = request.form.get("currency")
+
+        # ensure currency exist
+        if not selected_currency:
+            return errorMsg("Invalid currency!")
+        # print(f"##### {selected_currency}")
+        # selected_symbol = selected_currency[-1]
+        # print(f"#### {selected_symbol}")
+
+        # new distance unit (kilometer/mile) submitted by user
+        selected_distance_unit = request.form.get("distance")
+
+        # ensure valid distance unit submitted
+        if not selected_distance_unit:
+            return errorMsg("Invalid distance unit")
+
+        # new volume unit (lt/gal) submitted by user
+        selected_volume_unit = request.form.get("volume")
+
+        # ensure valid volume unit submitted by user
+        if not selected_distance_unit:
+            return errorMsg("Invalid distance unit")
+
+        # update new setting in database
+        try:
+            db.execute("UPDATE users SET currency=?, distance_unit=?, volume_unit=? WHERE id=?",
+                       selected_currency, selected_distance_unit, selected_volume_unit, session["user_id"])
+        except:
+            return errorMsg("Sorry, an error occured :(")
+
+        # flash user with message
+        flash(
+            f"Unit settings updated to '{selected_currency}' | '{selected_distance_unit}' '{selected_volume_unit}'")
+
+        # send user back to home page
+        return redirect("/")
+
+    else:
+        return errorMsg("You're not authorized for this action!")
+
+
+@app.route("/change-password", methods=["GET", "POST"])
+@login_required
+def changePassword():
+    """Show password settings"""
+
+    # user reached via GET
+    if request.method == "GET":
+        return render_template("change-password.html")
+
+    # user reached via POST
+    elif request.method == "POST":
+
+        # query existing hashed password
+        password_db = db.execute(
+            "SELECT hash FROM users WHERE id=?", session["user_id"])
+        old_hash = password_db[0]["hash"]
+
+        # old password submitted by user
+        old_password = request.form.get("old-password")
+        # ensure old password exists
+        if not old_password:
+            return errorMsg("Must provide old password!")
+
+        # new password submitted by user
+        new_password = request.form.get("password")
+        # ensure new password exists
+        if not new_password:
+            return errorMsg("Must provide new password!")
+
+        # if password doesn't meet requirements, return error
+        # validate_password() function returns False if password invalid (check helpers.py for detail)
+        isPassOK, message = validate_password(new_password)
+        # check if password meets requirements
+        if not isPassOK:
+            return errorMsg(message)
+
+        # confirmation of the new password
+        confirmation = request.form.get("confirmation")
+        # ensure confirmation exists
+        if not confirmation:
+            return errorMsg("Must confirm new password!")
+
+        # ensure new password exists
+        if not new_password == confirmation:
+            return errorMsg("Please confirm you password")
+
+        # old pass should match pass from db
+        if not check_password_hash(old_hash, old_password):
+            return errorMsg("Invalid old password!")
+
+        new_hash = generate_password_hash(new_password)
+
+        # update users password in database
+        try:
+            db.execute("UPDATE users SET hash=? WHERE id=?",
+                       new_hash, session["user_id"])
+        except:
+            return errorMsg("Sorry, an error occured :(")
+
+        # flash with a message
+        flash("Password updated!")
+
+        # send user back to homepage
+        return redirect("/")
+
+    # user reached route via PUT or DELETE
+    else:
+        return errorMsg("You're not authorized for this action!")
+
+
+@app.route("/change-username", methods=["GET", "POST"])
+@login_required
+def changeUsername():
+    if request.method == "GET":
+        return render_template("change-username.html")
+
+    elif request.method == "POST":
+        username_db = db.execute(
+            "SELECT username FROM users WHERE id=?", session["user_id"])
+        old_name = username_db[0]["username"]
+
+        old_username = request.form.get("old-username")
+        if not old_username:
+            return errorMsg("Must provide old username!")
+
+        new_username = request.form.get("username")
+        if not new_username:
+            return errorMsg("Must provide new username!")
+
+        confirmation = request.form.get("confirmation")
+        if not confirmation:
+            return errorMsg("Must confirm new username!")
+
+        if not new_username == confirmation:
+            return errorMsg("Please confirm you username")
+
+        # old username should match current password from db
+        if not old_name == old_username:
+            return errorMsg("Invalid username!")
+
+        # username has to be unique
+        usernames_db = db.execute("SELECT username FROM users")
+        for username in usernames_db:
+            if new_username == username["username"]:
+                return errorMsg("This username is already exist :(")
+
+        try:
+            db.execute("UPDATE users SET username=? WHERE id=?",
+                       new_username, session["user_id"])
+        except:
+            return errorMsg("Sorry, an error occured :(")
+
+        flash("username updated!")
+
+        return redirect("/")
+
+    else:
+        return errorMsg("You're not authorized for this action!")
+
+
+@app.route("/delete-refuel", methods=["GET", "POST"])
+@login_required
+def delRefuel():
+    """Deletes refuel transactions"""
+    # query user's refuel transactions
+    refuels_db = db.execute(
+        "SELECT * FROM refuels WHERE user_id=?", session["user_id"])
+
+    # user reached via GET
+    if request.method == "GET":
+        return render_template("delete-refuel.html", refuels=refuels_db)
+
+    # user reached via POST
+    elif request.method == "POST":
+        # refuel transaction to be deleted, submitted by user
+        refuel_del = request.form.get("refuel")
+
+        # ensure valid refuel submitted by user
+        if not refuel_del:
+            return errorMsg("invalid selection!")
+
+        # retrieve id of the refuel transaction
+        refuel_del_id = db.execute(
+            "SELECT id FROM refuels WHERE date=?", refuel_del)
+        id = refuel_del_id[0]['id']
+
+        deleted_row = db.execute("DELETE FROM refuels WHERE id=? AND user_id=?",
+                                 id, session["user_id"])
+
+        # * db.execute("DELETE") returns the number of rows deleted
+        # check if the row with given id was deleted
+        if deleted_row == 0:
+            return errorMsg("Sorry, an error occured :(")
+
+        flash("Refuel log deleted!")
+
+        return redirect("/")
+    # user reached via PUT or DELETE
+    else:
+        return errorMsg("You're not authorized for this action!")
+
+
+@app.route("/delete-vehicle", methods=["GET", "POST"])
+@login_required
+def delVehicle():
+    """Deletes vehicle"""
+
+    # query vehicles owned by user
+    vehicles_db = db.execute(
+        "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
+
+    # user reached via GET
+    if request.method == "GET":
+        return render_template("delete-vehicle.html", vehicles=vehicles_db)
+
+    # user reached via POST
+    elif request.method == "POST":
+        # vehicle name to be deleted (submitted by user)
+        vehicle_to_del = request.form.get("vehicle")
+        # ensure submit is valid
+        if not vehicle_to_del:
+            return errorMsg("Must provide an option to delete")
+
+        # ? if vehicle has transaction in refuels table, it should also be removed after vehicle deletion
+        # retrieve count of refuel transactions of the vehicle that needs to be deleted
+        vehicles_transactions_db = db.execute(
+            "SELECT COUNT(*) AS count FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
+        # print(f"### vehilces_transactons_db -> {vehicles_transactions_db}")
+
+        # ! is this a good thing? if there's transaction for the vehicle, then remove those as well.
+        if vehicles_transactions_db[0]["count"] > 0:
+            deleted_rows_refuels = db.execute(
+                "DELETE FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
+            if deleted_rows_refuels == 0:
+                return errorMsg("Sorry, an error occured :(")
+
+        # * db.execute("DELETE") returns the number of rows deleted
+        # check if the row was deleted
+        deleted_rows_vehicles = db.execute("DELETE FROM vehicles WHERE name=? AND user_id=?",
+                                           vehicle_to_del, session["user_id"])
+
+        if deleted_rows_vehicles == 0:
+            return errorMsg("Sorry, an error occured :(")
+        else:
+            flash("Vehicle & its transactions removed from the list!")
+            return redirect("/vehicles")
+
+    else:
+        return errorMsg("Not authorized for this action!")
+
+
+@app.route("/edit-refuel", methods=["GET", "POST"])
+@login_required
+def editRefuel():
+    """Lets user pick which entry he wants to edit"""
+    # query user's every refuel transactions
+    refuels_db = db.execute(
+        "SELECT * FROM refuels WHERE user_id=?", session["user_id"])
+
+    if request.method == "GET":
+        return render_template("edit-refuel.html", refuels=refuels_db)
+    elif request.method == "POST":
+        # transaction's id submitted by user
+        refuel_id = request.form.get("refuel")
+
+        # ensure valid submission
+        if not refuel_id:
+            return errorMsg("Invalid selection!")
+
+        # send user to edit/id route with the id submitted by user
+        return redirect(url_for("edit", id=refuel_id))
+
+    else:
+        return errorMsg("Sorry, you're not authorized for this action!")
+
+
+@app.route("/edit/<int:id>", methods=["GET", "POST"])
+@login_required
+def edit(id):
+    """Changes entry with certain id"""
+
+    # retrieve user's refuel row from database
+    refuel_db = db.execute(
+        "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
+    # ensure refuel submitted was valid
+    if not refuel_db:
+        return errorMsg("Not Found!")
+
+    # set default value of date input to now
+    # date_db = db.execute("SELECT datetime('now', 'localtime')")
+    # date = date_db[0]["datetime('now', 'localtime')"]
+
+    # show old date as placeholder
+    date = refuel_db[0]["date"]
+
+    # retrieve user's vehicles' names
+    users_vehicles_db = db.execute(
+        "SELECT name FROM vehicles WHERE user_id=?", session["user_id"])
+
+    # create a list that excludes the vehicle from transaction that needs to be edited
+    vehicles_list = []
+    for vehicle in users_vehicles_db:
+        if vehicle['name'] == refuel_db[0]["vehicle_name"]:
+            continue
+        else:
+            vehicles_list.append(vehicle['name'])
+
+    if request.method == "GET":
+        return render_template("edit.html", refuel=refuel_db[0], date=date, id=id, vehicles=vehicles_list)
+    elif request.method == "POST":
+
+        # date submitted by user
+        date = request.form.get("date")
+
+        # date validation
+        if not date:
+            return errorMsg("Must provide date!")
+
+        # date has to be converted into sql format!
+        # 2022-10-10T00:00:00 -> 2022-10-10 00:00:00
+        else:
+            date = date.replace("T", " ")
+
+        distance = request.form.get("distance")
+        # distance validation
+        if not distance or not int(distance) > 0:
+            return errorMsg("Invalid kilometer!")
+        else:
+            distance = int(distance)
+
+        volume = request.form.get("volume")
+
+        # volume validation
+        if not volume or not float(volume) > 0:
+            return errorMsg("Invalid liter")
+        else:
+            volume = float(volume)
+
+        price = request.form.get("price")
+
+        # unit price validation
+        if not price or not float(price) > 0:
+            return errorMsg("Invalid price!")
+        else:
+            price = float(price)
+
+        vehicle_name = request.form.get("vehicle")
+        # vehicle name validation
+        if not vehicle_name:
+            return errorMsg("Must provide vehicle!")
+
+        # retrieve new vehicle's id from database
+        else:
+            vehicle_id_db = db.execute(
+                "SELECT id FROM vehicles WHERE user_id=? AND name=?", session["user_id"], vehicle_name)
+            vehicle_id = vehicle_id_db[0]["id"]
+
+        # calculate total price
+        total_price = volume * price
+
+        # update database with edited refuel transaction
+        try:
+            db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=?, vehicle_name=? WHERE id=?",
+                       date, distance, volume, price, total_price, vehicle_id, vehicle_name, id)
+        except:
+            return errorMsg("Sorry, an error occured :(")
+
+        flash("Entry updated succesfully!")
+
+        return redirect("/")
+
+    else:
+        return errorMsg("Method not allowed!")
+
+
+@app.route("/history")
+@login_required
+def history():
+    """Shows the history of refuel transactions"""
+
+    # query user's unit settings
+    user_db = db.execute(
+        "SELECT * FROM users WHERE id=?", session["user_id"])
+    currency_symbol = user_db[0]["currency"][-1]
+    distance_unit = user_db[0]["distance_unit"]
+    volume_unit = user_db[0]["volume_unit"]
+
+    # query all transactions
+    refuels_db = db.execute(
+        "SELECT * FROM refuels WHERE user_id=? ORDER BY date DESC", session["user_id"])
+
+    # length of transactions
+    ref_len = len(refuels_db)
+
+    # retrieve grand total of total price column
+    sum_expense_db = db.execute(
+        "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", session["user_id"])
+
+    # grand total
+    sum_expense = sum_expense_db[0]["grand_total"]
+
+    # abbr. of months for chart
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    # sum (group) each month's transactions for more concise/clean chart
+    chart_db = db.execute(
+        "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
+
+    # pick month part from the string to show as label of the chart
+    labels = [months[int(x["date"][5:7]) - 1] for x in chart_db]
+
+    # total expense for that specific month
+    values = [x["total_price"] for x in chart_db]
+
+    # length of refuel transactions
+    vehicles_len = len(db.execute(
+        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
+
+    if request.method == "GET":
+        return render_template("history.html", refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, total_expenses=sum_expense)
+    else:
+        return errorMsg("You're not authorized for this action!")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Log user in"""
+
+    # Forget any user_id
+    session.clear()
+
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
+
+        # Ensure username was submitted
+        if not request.form.get("username"):
+            return errorMsg("Type a valid username")
+
+        # Ensure password was submitted
+        elif not request.form.get("password"):
+            return errorMsg("Type a valid password")
+
+        # Query database for username
+        users_db = db.execute("SELECT * FROM users WHERE username = ?",
+                              request.form.get("username"))
+
+        # Ensure username exists and password is correct
+        if not len(users_db) == 1 or not check_password_hash(users_db[0]["hash"], request.form.get("password")):
+            return errorMsg("Invalid username/password")
+
+        # Remember which user has logged in
+        session["user_id"] = users_db[0]["id"]
+
+        # Redirect user to home page
+        return redirect("/")
+
+    # User reached route via GET (as by clicking a link or via redirect)
+    else:
+        return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    """Log user out"""
+    # Forget any user_id
+    session.clear()
+
+    # Redirect user to login form
+    return redirect("/login")
+
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    """Sign user up"""
+    # if user visits by clicking a link/redirect
+    if request.method == "GET":
+        return render_template("signup.html")
+    elif request.method == "POST":
+
+        # variables submitted by user
+        username = request.form.get("username")
+        password = request.form.get("password")
+        confirmation = request.form.get("confirmation")
+
+        # check for potential errors
+        if not username:
+            return errorMsg("Please type a username")
+        if not password:
+            return errorMsg("Please type a password")
+        if not confirmation:
+            return errorMsg("Please confirm your password")
+        if not password == confirmation:
+            return errorMsg("Passwords do NOT match")
+
+        # if password doesn't meet requirements, return error
+        # validate_password() function returns False if password invalid (check helpers.py for detail)
+        isPassOK, message = validate_password(password)
+        if not isPassOK:
+            return errorMsg(message)
+
+        # if username already exist
+        # retrieve users from database
+        users_db = db.execute("SELECT * FROM users")
+
+        # ensure username does not exist
+        for user in users_db:
+            if user["username"] == username:
+                return errorMsg("Username is already taken")
+
+        # hash password
+        hash = generate_password_hash(password)
+
+        # INSERT INTO db new user's information
+        new_user_id = db.execute(
+            "INSERT INTO users (username, hash) VALUES(?, ?)", username, hash)
+        if not new_user_id:
+            return errorMsg("Sorry, an error occured!")
+
+        # Log the user in
+        session["user_id"] = new_user_id
+
+        # Flash user with welcoming message!
+        flash(f"Welcome, {username}!")
+
+        # send user to the homepage
+        return redirect("/")
+
+    # if user somehow send request by "DELETE"/"PUT" methods
+    else:
+        return errorMsg("This method is not allowed!")
+
+
+@app.route("/vehicles", methods=["GET", "POST"])
+@login_required
+def vehicles():
+    """Show all vehicles owned by user"""
+
+    # query user's unit settings
+    user_db = db.execute(
+        "SELECT * FROM users WHERE id=?", session["user_id"])
+    currency_symbol = user_db[0]["currency"][-1]
+    distance_unit = user_db[0]["distance_unit"]
+    volume_unit = user_db[0]["volume_unit"]
+
+    # retrieve total volume of refuels, total cost of refuels from vehicles table
+    vehicles_db = db.execute(
+        "SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
+
+    # length of vehicles list
+    veh_length = len(vehicles_db)
+
+    # query user's currency
+    currency_db = db.execute(
+        "SELECT currency FROM users WHERE id=?", session["user_id"])
+
+    if request.method == "GET":
+        return render_template("vehicles.html", vehicles=vehicles_db, veh_len=veh_length, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit)
+
+    elif request.method == "POST":
+
+        vehicle_name = request.form.get("vehicle_name")
+        # name validation
+        if not vehicle_name:
+            return errorMsg("Must provide name for a vehicle")
+
+        # ! check if this works fine
+        # check if vehicle name already exist for the same user
+        if len(vehicles_db) > 1:
+            for i in range(len(vehicles_db)):
+                if vehicles_db[i]["name"] == vehicle_name:
+                    return errorMsg("Vehicle's name must be unique!")
+
+        # license plate number submitted by user
+        license_plate = request.form.get("plate")
+        if not license_plate:
+            license_plate = ''
+
+        # retrieve current local date & time
+        date_db = db.execute("SELECT datetime('now', 'localtime')")
+        date = date_db[0]["datetime('now', 'localtime')"]
+
+        # add new vehicle to the vehicles table
+        try:
+            db.execute("INSERT INTO vehicles (name, license_plate, date, user_id) VALUES(?, ?, ?, ?)",
+                       vehicle_name, license_plate, date, session["user_id"])
+        except:
+            return errorMsg("Sorry, an error occured :(")
+
+        # select updated version of data
+        vehicles_db_uptd = db.execute(
+            "SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
+
+        # length of updated list
+        veh_len_upd = len(vehicles_db_uptd)
+
+        return render_template("vehicles.html", vehicles=vehicles_db_uptd, veh_len=veh_len_upd)
+
+    else:
+        return errorMsg("Sorry, you're not authorized!")

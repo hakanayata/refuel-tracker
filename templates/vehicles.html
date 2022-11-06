@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Vehicles
+{% endblock %}
+
+{% block main %}
+<form action="/vehicles" autocomplete="off" method="POST" class="mt-2">
+    <div class="my-3">
+        <input class="form-control mx-auto mt-5 mb-3 w-sm-80" type="text" name="vehicle_name"
+            placeholder="Vehicle name" required>
+    </div>
+    <input class="form-control mx-auto my-3 w-sm-80" type="text" name="plate"
+        placeholder="License plate (optional)">
+    <button class="btn btn-success mt-4 mb-5 w-sm-80">Add Vehicle</button>
+</form>
+
+{% if veh_len > 0 %}
+<table class="align-middle caption-top mx-auto table table-bordered table-dark table-striped w-75 w-sm-100">
+    <caption>List of Vehicles</caption>
+    <thead class="align-middle">
+        <tr>
+            <th>#</th>
+            <th>Vehicle Name</th>
+            <th>License Plate</th>
+            <th>Total Consumption Volume</th>
+            <th>Total Expenses</th>
+        </tr>
+    </thead>
+    <tbody>
+
+        {% for vehicle in vehicles %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ vehicle["name"] }}</td>
+            <td>{{ vehicle["license_plate"] }}</td>
+            <td> {{ vehicle["liters"] | vol(volume_unit) }} </td>
+            <td> {{ vehicle["expenses"] | cur(symbol) }} </td>
+        </tr>
+        {% endfor %}
+
+    </tbody>
+
+
+</table>
+
+<a href="/delete-vehicle" class="btn btn-outline-danger my-4 w-sm-80">Delete Vehicle</a>
+
+{% endif %}
+
+
+
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Log In
+{% endblock %}
+
+{% block main %}
+<form action="/login" autocomplete="off" method="post" class="mt-3">
+
+    <div class="mb-4">
+        <input class="form-control mx-auto w-sm-80" name="username" type="text" placeholder="Username">
+    </div>
+    <div class="mb-4">
+        <input class="form-control mx-auto w-sm-80" name="password" type="password" placeholder="Password">
+    </div>
+    <div class="d-grid gap-2 d-md-block mx-auto">
+        <button class="btn btn-success mx-auto w-sm-80" type="submit">Log In</button>
+    </div>
+
+    <!-- <passage-auth app-id="vKXDkNnZRyHHc4M7LmbDfgYy"></passage-auth> -->
+
+</form>
+{% endblock %}
