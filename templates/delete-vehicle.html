@@ -8,8 +8,8 @@ Delete Vehicle
 
 <form action="/delete-vehicle" method="post">
     <div class="mt-5 mb-3">
-        <select class="form-select mx-auto w-auto w-sm-80" name="vehicle">
-            <option disabled selected>Vehicle</option>
+        <select class="form-select mx-auto w-sm-80" name="vehicle">
+            <option disabled selected>Select a vehicle</option>
             {% for vehicle in vehicles %}
             <option value="{{vehicle['name']}}">{{ vehicle["name"] }}</option>
             {% endfor %}

@@ -5,13 +5,12 @@ Vehicles
 {% endblock %}
 
 {% block main %}
-<form action="/vehicles" autocomplete="off" method="POST" class="mt-2">
+<form action="/vehicles" autocomplete="off" method="post" class="mt-2">
     <div class="my-3">
-        <input class="form-control mx-auto mt-5 mb-3 w-sm-80" type="text" name="vehicle_name"
-            placeholder="Vehicle name" required>
+        <input class="form-control mx-auto mt-5 mb-3 w-sm-80" type="text" name="vehicle_name" placeholder="Vehicle name"
+            required>
     </div>
-    <input class="form-control mx-auto my-3 w-sm-80" type="text" name="plate"
-        placeholder="License plate (optional)">
+    <input class="form-control mx-auto my-3 w-sm-80" type="text" name="plate" placeholder="License plate (optional)">
     <button class="btn btn-success mt-4 mb-5 w-sm-80">Add Vehicle</button>
 </form>
 
@@ -25,6 +24,7 @@ Vehicles
             <th>License Plate</th>
             <th>Total Consumption Volume</th>
             <th>Total Expenses</th>
+            <th>Modify</th>
         </tr>
     </thead>
     <tbody>
@@ -36,6 +36,9 @@ Vehicles
             <td>{{ vehicle["license_plate"] }}</td>
             <td> {{ vehicle["liters"] | vol(volume_unit) }} </td>
             <td> {{ vehicle["expenses"] | cur(symbol) }} </td>
+            <td><a class="btn btn-outline-warning edit-button"
+                    href="{{ url_for('editVehicle', id=vehicle['vehicle_id']) }}" name="{{vehicle['name']}}"> ✎ </a>
+            </td>
         </tr>
         {% endfor %}
 

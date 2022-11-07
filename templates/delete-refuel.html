@@ -8,14 +8,14 @@ Delete Refuel
 
 <form action="/delete-refuel" method="post">
     <div class="mt-5 mb-3">
-        <select class="form-select mx-auto w-auto w-sm-80" name="refuel">
+        <select class="form-select mx-auto w-sm-80" name="refuel">
             <option disabled selected>Select Transaction</option>
             {% for refuel in refuels %}
             <option value="{{refuel['date']}}">{{ refuel["date"] }}</option>
             {% endfor %}
         </select>
     </div>
-    <button class="btn btn-danger mt-3 mb-5 w-auto w-sm-80" type="submit">Delete</button>
+    <button class="btn btn-outline-danger mt-3 mb-5 w-sm-80" type="submit">Delete</button>
 </form>
 
 {% endblock %}

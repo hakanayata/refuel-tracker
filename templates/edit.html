@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-Edit Transaction
+Edit Refuel Transaction
 {% endblock %}
 
 {% block main %}
@@ -9,7 +9,7 @@ Edit Transaction
     <div class="my-4">
 
         <input class="form-control my-2 mx-auto w-sm-80" type="datetime-local" min="2010-01-01T00:00:00"
-            max="2038-01-01T00:00:00" name="date" required value="{{ date }}" step="any">
+            max="2038-01-01T00:00:00" name="date" value="{{ date }}" step="any" required>
         <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" name="distance"
             placeholder="{{refuel['distance']}}" required>
         <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" step="any" name="volume"

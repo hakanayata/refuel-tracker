@@ -22,6 +22,8 @@ Home Page
                 <option value="{{ vehicle['name'] }}">{{ vehicle['name'] }}</option>
                 {% endfor %}
             </select>
+            <input class="form-control my-2 mx-auto w-sm-80" type="datetime-local" min="2010-01-01T00:00:00"
+                max="2038-01-01T00:00:00" name="date" required value="{{ now }}" step="any">
             <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" name="distance"
                 placeholder="Current odometer reading" required>
             <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" step="any" name="volume"
@@ -84,38 +86,35 @@ Home Page
 
 <hr class="text-light mx-auto w-75 w-sm-80 mt-5">
 
-{% if ref_len > 1 %}
+{% if show %}
 <table
     class="align-middle caption-top my-2 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
     <caption>Stats</caption>
     <thead class="align-middle">
         <tr>
-            {% if stats[0]["distance"] > 0 %}
+            <!-- {% if show %} -->
             <th>Vehicle</th>
             <th>Total Distance Traveled</th>
             <th>Total Fuel Volume Added</th>
-            <!-- <th>Avr. Cost <small>({{symbol}} / km)</small></th> -->
-            <!-- <th>Avr. Consumption <small>𝑙𝑡 / 100km</small> </th> -->
             <th>Total Expenses</th>
-            {% endif %}
+            <!-- {% endif %} -->
         </tr>
     </thead>
     <tbody>
         {% for stat in stats %}
         <tr>
-            {% if stat["distance"] > 0 %}
+            <!-- {% if stat["distance"] > 0 %} -->
             <td>{{ stat["vehicle_name"] }}</td>
             <td>{{ stat["distance"] | dist(distance_unit) }} </td>
-            <!-- <td>{{ (stat["expenses"] / stat["distance"]) | avr }}</td> -->
-            <!-- <td>{{ (stat["liters"] / (stat["distance"] / 100)) | avr }}</td> -->
             <td>{{ stat["liters"] | vol(volume_unit) }}</td>
             <td>{{ stat["expenses"] | cur(symbol) }}</td>
-            {% endif %}
+            <!-- {% endif %} -->
         </tr>
         {% endfor %}
     </tbody>
 
 </table>
+
 
 
 <hr class="text-light mx-auto w-75 w-sm-80 my-5">
@@ -131,12 +130,14 @@ Home Page
         <div class="mx-auto w-75 w-sm-100">
             <div class="card">
                 <div class="card-header bg-dark text-center">
-                    <p class="text-info">Refuels Chart (Last 3 months)</p>
+                    <p class="fw-bold" style="color: #40e1b0">REFUEL TRANSACTIONS CHART (Last 3 months)</p>
                 </div>
                 <div style="background-color: lightgray" class="card-body">
                     <canvas style="background-color: white" id="myChart"></canvas>
                 </div>
-                <!-- <div class="card-footer"></div> -->
+                <div class="card-footer bg-dark text-end">
+                    <p class="text-info fw-bold">Total Expenses, {{symbol}}</p>
+                </div>
             </div>
         </div>
     </div>
@@ -151,7 +152,7 @@ Home Page
             labels: {{ labels | safe }},
     datasets: [{
         axis: 'y',
-        label: 'Total Fuel Expense',
+        label: 'Monthly Total Fuel Expenses',
         // data: [12, 19, 3, 5, 2, 3],
         data: {{ values | safe }},
         backgroundColor: [

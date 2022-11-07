@@ -68,11 +68,10 @@ db = SQL("sqlite:///refueltracker.db")
 
 # ***** CONFIGURING ENDS HERE *****
 
-# ! with 2 cars added, if one of them only has 1 transaction, stats table on index page doesnt show table headers
-# ! edit vehicle entry, edit button at the end of each table row (users should be able to change the license plate, etc.)
-# ? after changing currency keep old transactions the way they were, only change next transactions
+
+# ! delete btn should be passive if user leaves any input empty
+# ! chart date filter
 # ? total distance traveled stat on vehicles page
-# ? odometer shouldn't be the same with the last transaction's
 
 
 @app.after_request
@@ -96,6 +95,10 @@ def index():
     distance_unit = user_db[0]["distance_unit"]
     volume_unit = user_db[0]["volume_unit"]
 
+    # set default value of date input to now
+    date_db = db.execute("SELECT datetime('now', 'localtime')")
+    date_now = date_db[0]["datetime('now', 'localtime')"]
+
     # select vehicles to show in dropdown menu
     vehicles = db.execute(
         "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
@@ -116,6 +119,13 @@ def index():
     statistics_db = db.execute(
         "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_id", session["user_id"])
 
+    # stats' table should show when one vehicle has at least 2 transactions
+    onShow = False
+    for stat in statistics_db:
+        if stat["distance"] > 0:
+            onShow = True
+            break
+
     # abbrevations for chart
     months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -130,13 +140,18 @@ def index():
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
     if request.method == "GET":
-        return render_template("index.html", vehicles=vehicles, refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, username=username)
+        return render_template("index.html", vehicles=vehicles, refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username, now=date_now)
 
     # * POST carries request parameter in message body
     # user reached route via POST, as by submitting a form via POST
     elif request.method == "POST":
-        date_db = db.execute("SELECT datetime('now', 'localtime')")
-        date = date_db[0]["datetime('now', 'localtime')"]
+        # date_db = db.execute("SELECT datetime('now', 'localtime')")
+        # date = date_db[0]["datetime('now', 'localtime')"]
+        date = request.form.get("date")
+        if not date:
+            return errorMsg("Invalid date")
+        else:
+            date = date.replace("T", " ")
 
         selected_vehicle = request.form.get("vehicle")
         if not selected_vehicle:
@@ -200,6 +215,12 @@ def index():
         statistics_db_upd = db.execute(
             "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_id", session["user_id"])
 
+        onShow_upd = False
+        for stat in statistics_db_upd:
+            if stat["distance"] > 0:
+                onShow_upd = True
+                break
+
         # retrieve updated refuels to show on chart
         chart_db_upd = db.execute(
             "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-3 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
@@ -208,7 +229,7 @@ def index():
         labels_upd = [months[int(x["date"][5:7]) - 1] for x in chart_db_upd]
         values_upd = [x["total_price"] for x in chart_db_upd]
 
-        return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, stats=statistics_db_upd, username=username)
+        return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, stats=statistics_db_upd, show=onShow_upd, username=username, now=date_now)
 
     # user reached route via PUT, DELETE
     else:
@@ -232,9 +253,17 @@ def changeCur():
                   'KRW - ₩', 'KZT - ₸', 'TRY - ₺']
     # symbols = [x[-1] for x in currencies]
 
+    # user's unit settings
+    user_units_db = db.execute(
+        "SELECT currency, distance_unit, volume_unit FROM users WHERE id=?", session["user_id"])
+
+    user_currency = user_units_db[0]["currency"]
+    user_distance_unit = user_units_db[0]["distance_unit"]
+    user_volume_unit = user_units_db[0]["volume_unit"]
+
     # user reached route via GET
     if request.method == "GET":
-        return render_template("change-units.html", currencies=currencies)
+        return render_template("change-units.html", currencies=currencies, user_currency=user_currency, user_distance_unit=user_distance_unit, user_volume_unit=user_volume_unit)
 
     # user reached route via POST
     elif request.method == "POST":
@@ -245,9 +274,6 @@ def changeCur():
         # ensure currency exist
         if not selected_currency:
             return errorMsg("Invalid currency!")
-        # print(f"##### {selected_currency}")
-        # selected_symbol = selected_currency[-1]
-        # print(f"#### {selected_symbol}")
 
         # new distance unit (kilometer/mile) submitted by user
         selected_distance_unit = request.form.get("distance")
@@ -485,7 +511,8 @@ def delVehicle():
         if deleted_rows_vehicles == 0:
             return errorMsg("Sorry, an error occured :(")
         else:
-            flash("Vehicle & its transactions removed from the list!")
+            flash(
+                f'"{vehicle_to_del}" & its transactions removed from the list!')
             return redirect("/vehicles")
 
     else:
@@ -520,14 +547,14 @@ def editRefuel():
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
 @login_required
 def edit(id):
-    """Changes entry with certain id"""
+    """Edits an entry with a certain id"""
 
     # retrieve user's refuel row from database
     refuel_db = db.execute(
         "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
     # ensure refuel submitted was valid
     if not refuel_db:
-        return errorMsg("Not Found!")
+        return errorMsg("Not found!")
 
     # set default value of date input to now
     # date_db = db.execute("SELECT datetime('now', 'localtime')")
@@ -614,6 +641,65 @@ def edit(id):
 
     else:
         return errorMsg("Method not allowed!")
+
+
+@app.route("/edit-vehicle/<int:id>", methods=["GET", "POST"])
+@login_required
+def editVehicle(id):
+    """Edits vehicle name or plate number"""
+    # query for vehicle to be edited
+    vehicle_db = db.execute(
+        "SELECT name, license_plate FROM vehicles WHERE user_id=? AND id=?", session["user_id"], id)
+
+    # user musn't reach ids that aren't his/her, by changing the URL manually
+    if not vehicle_db:
+        return errorMsg("Not found!")
+
+    # current name of the vehicle, user might keep the name, this is used in name check below
+    current_vehicle_name = vehicle_db[0]['name']
+
+    # every vehicle from user, used in name check below
+    user_vehicles_db = db.execute(
+        "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
+
+    if request.method == "GET":
+        return render_template("edit-vehicle.html", vehicle=vehicle_db, id=id)
+
+    elif request.method == "POST":
+
+        vehicle_name = request.form.get("vehicle_name")
+        # name validation
+        if not vehicle_name:
+            return errorMsg("Must provide name for a vehicle")
+
+        # ! check if this works fine
+        # check if vehicle name already exist for the same user EXCEPT FOR FORMER VEHICLE NAME
+        if len(user_vehicles_db) > 1:
+            for i in range(len(user_vehicles_db)):
+                if user_vehicles_db[i]["name"] == vehicle_name:
+                    if current_vehicle_name == vehicle_name:
+                        break
+                    else:
+                        return errorMsg("Vehicle's name must be unique!")
+
+        # license plate number submitted by user
+        license_plate = request.form.get("plate")
+        if not license_plate:
+            license_plate = ''
+
+        # update database
+        try:
+            db.execute("UPDATE vehicles SET name=?, license_plate=? WHERE user_id=? AND id=?",
+                       vehicle_name, license_plate, session["user_id"], id)
+        except:
+            return errorMsg("Ooopps! An error occured :(")
+
+        flash("Vehicle's information updated!")
+
+        return redirect("/")
+
+    else:
+        return errorMsg("You are not authorized for this action!")
 
 
 @app.route("/history")
