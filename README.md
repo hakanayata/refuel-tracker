@@ -19,15 +19,19 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
   - to change their units (currency, distance, volume)
 - a **vehicles** page where users can
   - add vehicles that they want to keep track of
-  - view vehicles, and some additional useful information
+  - delete vehicles
+  - edit vehicles' name and license plate number
+  - view vehicles table where total consumption, and total expenses for each vehicle can be seen.
 - an **index page** that allows users 
   - to add new fuel purchase details including current odometer reading, refuel volume added, and unit price of the fuel.
   - to view their last 3 fuel purchases and other data/statistics that might be useful such as total fuel expenditure in the entire history of purchases
   - to view a chart showing fuel expenses for the last 3 months
-- a **history page** where users can see every purchase that has been made up to that moment, and let users do the following tasks
+- a **history page** where users can see every purchase that has been made up to that moment, and let users do the following actions
   - edit an entry
   - delete an entry
-  - and also view a chart showing fuel expenses for each month of the current year
+  - save the table as pdf with a click of a button
+  - view a chart showing fuel expenses for each month of the current year
+  
 
 
 ## Languages & Tools
@@ -41,27 +45,9 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
 - Javascript
 - SQLite3
 - DB Browser for SQLite3
-- Google Colab
 - Visual Studio Code
+- Google Colab
 
-
-
-``` shell
-    nano text.html
-```
-
-
-
-lol
-:+1:
-**lol**
-:shipit:
-*lol*
-***lol***
-
-
-    
-- [x] I have done this
 
 ## Potential Improvements To Do :crossed_fingers:
 - Adding some visual features: light/dark mode, animations
