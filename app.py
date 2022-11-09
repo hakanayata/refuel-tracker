@@ -132,7 +132,7 @@ def index():
 
     # query label (show day-month-year) and value (total fuel expense) to show on chart
     chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-3 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
+        "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
 
     labels = [months[int(x["date"][5:7]) - 1] for x in chart_db]
     values = [x["total_price"] for x in chart_db]
@@ -224,7 +224,7 @@ def index():
 
         # retrieve updated refuels to show on chart
         chart_db_upd = db.execute(
-            "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-3 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
+            "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
 
         # updated chart's labes & values
         labels_upd = [months[int(x["date"][5:7]) - 1] for x in chart_db_upd]
