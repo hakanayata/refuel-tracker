@@ -18,12 +18,12 @@ History
         <div class="mx-auto w-50 w-sm-100">
             <div class="card">
                 <div class="card-header bg-dark text-center">
-                    <p class="text-info">Refuels Chart</p>
+                    <p style="color: #40e1b0">MONTHLY TOTAL FUEL EXPENSES - CURRENT YEAR</p>
                 </div>
                 <div style="background-color: lightgray;" class="card-body">
                     <canvas style="background-color: white" id="myChart"></canvas>
                 </div>
-                <!-- <div style="background-color: brown;" class="card-footer"></div> -->
+                <div class="card-footer bg-dark text-info text-end">Total Expense, {{ symbol }}</div>
             </div>
         </div>
     </div>
@@ -86,7 +86,7 @@ History
 <div class="table-responsive-sm">
     <table
         class="align-middle caption-top mt-5 mx-auto table table-dark table-bordered table-sm table-striped w-75 w-sm-100">
-        <caption>History of Refuels</caption>
+        <caption>History of Refuel Transactions</caption>
         <thead class="align-middle">
             <tr>
                 <th>#</th>
@@ -98,6 +98,7 @@ History
                 <th>Fuel Volume Added</th>
                 <th>Unit Price</th>
                 <th>Total Price</th>
+                <th>Modify</th>
             </tr>
         </thead>
         <tbody>
@@ -113,6 +114,48 @@ History
                 <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
                 <td>{{ refuel["price"] | cur(symbol) }}</td>
                 <td>{{ refuel["total_price"] | cur(symbol) }}</td>
+                <td>
+                    <a class="btn btn-outline-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
+                        name="{{ refuel['id'] }}"> ✎ </a>
+
+                    <!-- Button trigger modal -->
+                    <button type="button" class="btn btn-outline-danger modify-button" data-bs-toggle="modal"
+                        data-bs-target="#deleteModal{{ refuel['id'] }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="20" fill="currentColor"
+                            class="bi bi-trash" viewBox="0 0 16 20">
+                            <path
+                                d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                            <path fill-rule="evenodd"
+                                d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                        </svg>
+                    </button>
+
+                    <!-- Modal -->
+                    <div class="modal fade" id="deleteModal{{ refuel['id']}}" tabindex="-1"
+                        aria-labelledby="deleteModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-sm modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5 text-dark" id="deleteModalLabel">
+                                        Confirmation</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-dark fs-6">Are you sure?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm w-auto px-4"
+                                        data-bs-dismiss="modal">No</button>
+                                    <form action="{{ url_for('deleteRefuel', id=refuel['id']) }}" method="post">
+                                        <input class="btn btn-danger btn-sm w-auto px-4" type="submit" value="Yes">
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </td>
             </tr>
             {% endfor %}
 
@@ -133,8 +176,8 @@ History
 </div>
 <button onclick="window.print()" class="btn btn-outline-info px-4 my-4 mx-3 w-sm-80" id="savepdf" type="button">Save
     PDF</button>
-<a href="/edit-refuel" class="btn btn-outline-warning px-3 my-4 mx-3 w-sm-80">Edit Refuel</a>
-<a href="/delete-refuel" class="btn btn-outline-danger my-4 mx-3 w-sm-80">Delete Refuel</a>
+<!-- <a href="/edit-refuel" class="btn btn-outline-warning px-3 my-4 mx-3 w-sm-80">Edit Refuel</a>
+<a href="/delete-refuel" class="btn btn-outline-danger my-4 mx-3 w-sm-80">Delete Refuel</a> -->
 {% else %}
 
 <h3 class="text-center text-light mt-5 mb-4">No entries to show.</h3>

@@ -69,8 +69,8 @@ db = SQL("sqlite:///refueltracker.db")
 # ***** CONFIGURING ENDS HERE *****
 
 
-# ! delete btn should be passive if user leaves any input empty
-# ! chart date filter
+# ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
+# ? chart date filter
 # ? total distance traveled stat on vehicles page
 
 
@@ -154,6 +154,7 @@ def index():
             date = date.replace("T", " ")
 
         selected_vehicle = request.form.get("vehicle")
+        # validation
         if not selected_vehicle:
             return errorMsg("invalid vehicle!")
 
@@ -396,6 +397,11 @@ def changeUsername():
         if not new_username:
             return errorMsg("Must provide new username!")
 
+        # check for potential errors
+        for char in new_username:
+            if char == ' ':
+                return errorMsg("Space character(s) in username is not allowed!")
+
         confirmation = request.form.get("confirmation")
         if not confirmation:
             return errorMsg("Must confirm new username!")
@@ -419,7 +425,7 @@ def changeUsername():
         except:
             return errorMsg("Sorry, an error occured :(")
 
-        flash("username updated!")
+        flash("Your username has been updated!")
 
         return redirect("/")
 
@@ -427,50 +433,70 @@ def changeUsername():
         return errorMsg("You're not authorized for this action!")
 
 
-@app.route("/delete-refuel", methods=["GET", "POST"])
-@login_required
-def delRefuel():
-    """Deletes refuel transactions"""
-    # query user's refuel transactions
-    refuels_db = db.execute(
-        "SELECT * FROM refuels WHERE user_id=?", session["user_id"])
-
-    # user reached via GET
-    if request.method == "GET":
-        return render_template("delete-refuel.html", refuels=refuels_db)
-
-    # user reached via POST
-    elif request.method == "POST":
-        # refuel transaction to be deleted, submitted by user
-        refuel_del = request.form.get("refuel")
-
-        # ensure valid refuel submitted by user
-        if not refuel_del:
-            return errorMsg("invalid selection!")
-
-        # retrieve id of the refuel transaction
-        refuel_del_id = db.execute(
-            "SELECT id FROM refuels WHERE date=?", refuel_del)
-        id = refuel_del_id[0]['id']
-
-        deleted_row = db.execute("DELETE FROM refuels WHERE id=? AND user_id=?",
-                                 id, session["user_id"])
-
-        # * db.execute("DELETE") returns the number of rows deleted
-        # check if the row with given id was deleted
-        if deleted_row == 0:
-            return errorMsg("Sorry, an error occured :(")
-
-        flash("Refuel log deleted!")
-
-        return redirect("/")
-    # user reached via PUT or DELETE
-    else:
-        return errorMsg("You're not authorized for this action!")
-
-# @app.route("/delete-refuel/<int:id>", methods=["POST"])
+# @app.route("/delete-refuel", methods=["GET", "POST"])
 # @login_required
-# def deleteVehicle(id):
+# def delRefuel():
+#     """Deletes refuel transactions"""
+#     # query user's refuel transactions
+#     refuels_db = db.execute(
+#         "SELECT * FROM refuels WHERE user_id=?", session["user_id"])
+
+#     # user reached via GET
+#     if request.method == "GET":
+#         return render_template("delete-refuel.html", refuels=refuels_db)
+
+#     # user reached via POST
+#     elif request.method == "POST":
+#         # refuel transaction to be deleted, submitted by user
+#         refuel_del = request.form.get("refuel")
+
+#         # ensure valid refuel submitted by user
+#         if not refuel_del:
+#             return errorMsg("invalid selection!")
+
+#         # retrieve id of the refuel transaction
+#         refuel_del_id = db.execute(
+#             "SELECT id FROM refuels WHERE date=?", refuel_del)
+#         id = refuel_del_id[0]['id']
+
+#         deleted_row = db.execute("DELETE FROM refuels WHERE id=? AND user_id=?",
+#                                  id, session["user_id"])
+
+#         # * db.execute("DELETE") returns the number of rows deleted
+#         # check if the row with given id was deleted
+#         if deleted_row == 0:
+#             return errorMsg("Sorry, an error occured :(")
+
+#         flash("Refuel log deleted!")
+
+#         return redirect("/")
+#     # user reached via PUT or DELETE
+#     else:
+#         return errorMsg("You're not authorized for this action!")
+
+
+@app.route("/delete-refuel/<int:id>", methods=["POST"])
+@login_required
+def deleteRefuel(id):
+    """Deletes refuel after confirmation"""
+    if request.method == "POST":
+        refuel_delete_id = db.execute(
+            "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
+
+        if not refuel_delete_id:
+            return errorMsg("Not Found!")
+
+        try:
+            db.execute("DELETE FROM refuels WHERE id=?", id)
+        except:
+            return errorMsg("Ooops! An error occured while deleting from refuels table :(")
+
+        flash("Transaction has been deleted!")
+
+        return redirect("/")
+
+    else:
+        return errorMsg("This method is not allowed!")
 
 
 @app.route("/delete-vehicle/<int:id>", methods=["POST"])
@@ -482,10 +508,10 @@ def deleteVehicle(id):
         vehicle_delete_db = db.execute(
             "SELECT * FROM vehicles WHERE user_id=? AND id=?", session['user_id'], id)
 
-        vehicle = vehicle_delete_db[0]['name']
-
         if not vehicle_delete_db:
             return errorMsg("Not found!")
+
+        vehicle = vehicle_delete_db[0]['name']
 
         # if vehicle has refuel transaction(s), remove those
         rows = db.execute("SELECT * FROM refuels WHERE vehicle_id=?", id)
@@ -711,6 +737,12 @@ def editVehicle(id):
         if not vehicle_name:
             return errorMsg("Must provide name for a vehicle")
 
+        # ? ncortex
+        if vehicle_name.startswith(" "):
+            return errorMsg("Vehicle name can not start with space character(s)")
+        if vehicle_name.endswith(" "):
+            return errorMsg("Vehicle name can not end with space character(s)")
+
         # ! check if this works fine
         # check if vehicle name already exist for the same user EXCEPT FOR FORMER VEHICLE NAME
         if len(user_vehicles_db) > 1:
@@ -725,6 +757,11 @@ def editVehicle(id):
         license_plate = request.form.get("plate")
         if not license_plate:
             license_plate = ''
+        # ? ncortex
+        if license_plate.startswith(" "):
+            return errorMsg("Vehicle name can not start with space character(s)")
+        if license_plate.endswith(" "):
+            return errorMsg("Vehicle name can not end with space character(s)")
 
         # update database
         try:
@@ -854,6 +891,10 @@ def signup():
         # check for potential errors
         if not username:
             return errorMsg("Please type a username")
+        for char in username:
+            if char == ' ':
+                return errorMsg("Space character(s) in username is not allowed!")
+
         if not password:
             return errorMsg("Please type a password")
         if not confirmation:
@@ -933,6 +974,12 @@ def vehicles():
         if not vehicle_name:
             return errorMsg("Must provide name for a vehicle")
 
+        # ? ncortex
+        if vehicle_name.startswith(" "):
+            return errorMsg("Vehicle name can not start with space character(s)")
+        if vehicle_name.endswith(" "):
+            return errorMsg("Vehicle name can not end with space character(s)")
+
         # ! check if this works fine
         # check if vehicle name already exist for the same user
         if len(vehicles_db) > 1:
@@ -944,6 +991,11 @@ def vehicles():
         license_plate = request.form.get("plate")
         if not license_plate:
             license_plate = ''
+        # ? ncortex
+        if license_plate.startswith(" "):
+            return errorMsg("Vehicle name can not start with space character(s)")
+        if license_plate.endswith(" "):
+            return errorMsg("Vehicle name can not end with space character(s)")
 
         # retrieve current local date & time
         date_db = db.execute("SELECT datetime('now', 'localtime')")
