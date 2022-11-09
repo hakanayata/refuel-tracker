@@ -56,6 +56,7 @@ Home Page
                     <th>Fuel Volume Added</th>
                     <th>Unit Price</th>
                     <th>Total Price</th>
+                    <th>Modify</th>
                 </tr>
             </thead>
             <tbody>
@@ -71,6 +72,43 @@ Home Page
                     <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
                     <td>{{ refuel["price"] | cur(symbol) }}</td>
                     <td>{{ refuel["total_price"] | cur(symbol) }}</td>
+                    <td>
+                        <a class="btn btn-outline-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
+                            name="{{ refuel['id'] }}"> ✎ </a>
+
+                        <!-- Button trigger modal -->
+                        <button type="button" class="btn btn-outline-danger modify-button" data-bs-toggle="modal"
+                            data-bs-target="#deleteModal{{ refuel['id'] }}">
+                            ⛌
+                        </button>
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="deleteModal{{ refuel['id']}}" tabindex="-1"
+                            aria-labelledby="deleteModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-sm modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5 text-dark" id="deleteModalLabel">
+                                            Confirmation</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="text-dark fs-6">Are you sure?</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary btn-sm w-auto px-4"
+                                            data-bs-dismiss="modal">No</button>
+                                        <form action="{{ url_for('deleteRefuel', id=refuel['id']) }}" method="post">
+                                            <input class="btn btn-danger btn-sm w-auto px-4" type="submit" value="Yes">
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </td>
                 </tr>
                 {% endfor %}
 

@@ -24,7 +24,7 @@ th {
 input[type="text"],
 input[type="number"],
 input[type="password"],
-input[type="submit"],
+/* input[type="submit"], */
 input[type="datetime-local"],
 .form-select {
     width: 280px;
@@ -35,10 +35,11 @@ input[type="datetime-local"],
     width: 280px;
 }
 
-.btn.btn-outline-warning.edit-button {
+.btn.modify-button {
     height: 42.8px;
     width: 42.8px;
     font-size: 1.3rem;
+    margin: 3px;
 }
 
 @media only screen and (max-width: 768px) {
@@ -46,7 +47,7 @@ input[type="datetime-local"],
     input[type="text"],
     input[type="number"],
     input[type="password"],
-    input[type="submit"],
+    /* input[type="submit"], */
     input[type="datetime-local"] {
         width: 80% !important;
         background-color: #fbfbfb;

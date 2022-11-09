@@ -86,7 +86,7 @@ def after_request(response):
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    """Show last entries, let user add new entry"""
+    """Show last entries, let user add/delete/edit new entry"""
     # retrieve username and unit settings
     user_db = db.execute(
         "SELECT * FROM users WHERE id=?", session["user_id"])
@@ -468,55 +468,94 @@ def delRefuel():
     else:
         return errorMsg("You're not authorized for this action!")
 
+# @app.route("/delete-refuel/<int:id>", methods=["POST"])
+# @login_required
+# def deleteVehicle(id):
 
-@app.route("/delete-vehicle", methods=["GET", "POST"])
+
+@app.route("/delete-vehicle/<int:id>", methods=["POST"])
 @login_required
-def delVehicle():
-    """Deletes vehicle"""
+def deleteVehicle(id):
+    """Deletes vehicle after confirmation"""
+    if request.method == "POST":
 
-    # query vehicles owned by user
-    vehicles_db = db.execute(
-        "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
+        vehicle_delete_db = db.execute(
+            "SELECT * FROM vehicles WHERE user_id=? AND id=?", session['user_id'], id)
 
-    # user reached via GET
-    if request.method == "GET":
-        return render_template("delete-vehicle.html", vehicles=vehicles_db)
+        vehicle = vehicle_delete_db[0]['name']
 
-    # user reached via POST
-    elif request.method == "POST":
-        # vehicle name to be deleted (submitted by user)
-        vehicle_to_del = request.form.get("vehicle")
-        # ensure submit is valid
-        if not vehicle_to_del:
-            return errorMsg("Must provide an option to delete")
+        if not vehicle_delete_db:
+            return errorMsg("Not found!")
 
-        # ? if vehicle has transaction in refuels table, it should also be removed after vehicle deletion
-        # retrieve count of refuel transactions of the vehicle that needs to be deleted
-        vehicles_transactions_db = db.execute(
-            "SELECT COUNT(*) AS count FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
-        # print(f"### vehilces_transactons_db -> {vehicles_transactions_db}")
+        # if vehicle has refuel transaction(s), remove those
+        rows = db.execute("SELECT * FROM refuels WHERE vehicle_id=?", id)
+        if len(rows) > 0:
+            try:
+                db.execute("DELETE FROM refuels WHERE vehicle_id=?", id)
+            except:
+                return errorMsg("Ooops! An error occured while deleting from refuels table :( ")
 
-        # ! is this a good thing? if there's transaction for the vehicle, then remove those as well.
-        if vehicles_transactions_db[0]["count"] > 0:
-            deleted_rows_refuels = db.execute(
-                "DELETE FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
-            if deleted_rows_refuels == 0:
-                return errorMsg("Sorry, an error occured :(")
+        try:
+            db.execute("DELETE FROM vehicles WHERE id=?", id)
+        except:
+            return errorMsg("Ooops! An error occured while deleting from vehicles table :(")
 
-        # * db.execute("DELETE") returns the number of rows deleted
-        # check if the row was deleted
-        deleted_rows_vehicles = db.execute("DELETE FROM vehicles WHERE name=? AND user_id=?",
-                                           vehicle_to_del, session["user_id"])
+        flash(f"{vehicle} has been deleted!")
 
-        if deleted_rows_vehicles == 0:
-            return errorMsg("Sorry, an error occured :(")
-        else:
-            flash(
-                f'"{vehicle_to_del}" & its transactions removed from the list!')
-            return redirect("/vehicles")
+        return redirect('/')
 
     else:
-        return errorMsg("Not authorized for this action!")
+        return errorMsg("You are not authorized for this action!")
+
+
+# @app.route("/delete-vehicle", methods=["GET", "POST"])
+# @login_required
+# def delVehicle():
+#     """Deletes vehicle"""
+
+#     # query vehicles owned by user
+#     vehicles_db = db.execute(
+#         "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
+
+#     # user reached via GET
+#     if request.method == "GET":
+#         return render_template("delete-vehicle.html", vehicles=vehicles_db)
+
+#     # user reached via POST
+#     elif request.method == "POST":
+#         # vehicle name to be deleted (submitted by user)
+#         vehicle_to_del = request.form.get("vehicle")
+#         # ensure submit is valid
+#         if not vehicle_to_del:
+#             return errorMsg("Must provide an option to delete")
+
+#         # ? if vehicle has transaction in refuels table, it should also be removed after vehicle deletion
+#         # retrieve count of refuel transactions of the vehicle that needs to be deleted
+#         vehicles_transactions_db = db.execute(
+#             "SELECT COUNT(*) AS count FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
+#         # print(f"### vehilces_transactons_db -> {vehicles_transactions_db}")
+
+#         # ! is this a good thing? if there's transaction for the vehicle, then remove those as well.
+#         if vehicles_transactions_db[0]["count"] > 0:
+#             deleted_rows_refuels = db.execute(
+#                 "DELETE FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
+#             if deleted_rows_refuels == 0:
+#                 return errorMsg("Sorry, an error occured :(")
+
+#         # * db.execute("DELETE") returns the number of rows deleted
+#         # check if the row was deleted
+#         deleted_rows_vehicles = db.execute("DELETE FROM vehicles WHERE name=? AND user_id=?",
+#                                            vehicle_to_del, session["user_id"])
+
+#         if deleted_rows_vehicles == 0:
+#             return errorMsg("Sorry, an error occured :(")
+#         else:
+#             flash(
+#                 f'"{vehicle_to_del}" & its transactions removed from the list!')
+#             return redirect("/vehicles")
+
+#     else:
+#         return errorMsg("Not authorized for this action!")
 
 
 @app.route("/edit-refuel", methods=["GET", "POST"])
@@ -635,7 +674,7 @@ def edit(id):
         except:
             return errorMsg("Sorry, an error occured :(")
 
-        flash("Entry updated succesfully!")
+        flash("Entry has been updated succesfully!")
 
         return redirect("/")
 
@@ -874,14 +913,15 @@ def vehicles():
 
     # retrieve total volume of refuels, total cost of refuels from vehicles table
     vehicles_db = db.execute(
-        "SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
+        "SELECT vehicles.id, vehicles.name, vehicles.license_plate, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session['user_id'])
+    # vehicles_db = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
 
     # length of vehicles list
     veh_length = len(vehicles_db)
 
     # query user's currency
-    currency_db = db.execute(
-        "SELECT currency FROM users WHERE id=?", session["user_id"])
+    # currency_db = db.execute(
+    #     "SELECT currency FROM users WHERE id=?", session["user_id"])
 
     if request.method == "GET":
         return render_template("vehicles.html", vehicles=vehicles_db, veh_len=veh_length, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit)
@@ -918,7 +958,8 @@ def vehicles():
 
         # select updated version of data
         vehicles_db_uptd = db.execute(
-            "SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
+            "SELECT vehicles.id, vehicles.name, vehicles.license_plate, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session['user_id'])
+        # vehicles_db_uptd = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
 
         # length of updated list
         veh_len_upd = len(vehicles_db_uptd)
