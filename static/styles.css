@@ -79,6 +79,7 @@ input[type="datetime-local"],
     table * {
         visibility: visible;
         background-color: white !important;
+        font-weight: bold;
     }
 
     table {
@@ -87,4 +88,9 @@ input[type="datetime-local"],
         left: 50%;
         transform: translateX(-50%);
     }
+
+    .exclude-print {
+        display: none;
+    }
+
 }
