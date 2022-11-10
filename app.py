@@ -68,7 +68,7 @@ db = SQL("sqlite:///refueltracker.db")
 
 # ***** CONFIGURING ENDS HERE *****
 
-
+# ! changing vehicle name doesn't affect old transactions
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
 # ? chart date filter
 # ? total distance traveled stat on vehicles page
@@ -199,7 +199,7 @@ def index():
             db.execute("INSERT INTO refuels (date, distance, volume, price, total_price, user_id, vehicle_id, vehicle_name) VALUES(?,?,?,?,?,?,?,?)",
                        date, distance, volume, unit_price, total_price, session["user_id"], sel_vehicle_id, sel_vehicle_name)
         except:
-            return errorMsg("Sorry, an error occured :(")
+            return errorMsg("Ooops! An error has been occured :(")
 
         # select updated database after a new entry
         refuels_upd_db = db.execute(
@@ -295,7 +295,7 @@ def changeCur():
             db.execute("UPDATE users SET currency=?, distance_unit=?, volume_unit=? WHERE id=?",
                        selected_currency, selected_distance_unit, selected_volume_unit, session["user_id"])
         except:
-            return errorMsg("Sorry, an error occured :(")
+            return errorMsg("Ooops! An error has been occured :(")
 
         # flash user with message
         flash(
@@ -365,7 +365,7 @@ def changePassword():
             db.execute("UPDATE users SET hash=? WHERE id=?",
                        new_hash, session["user_id"])
         except:
-            return errorMsg("Sorry, an error occured :(")
+            return errorMsg("Ooops! An error has been occured :(")
 
         # flash with a message
         flash("Password updated!")
@@ -423,7 +423,7 @@ def changeUsername():
             db.execute("UPDATE users SET username=? WHERE id=?",
                        new_username, session["user_id"])
         except:
-            return errorMsg("Sorry, an error occured :(")
+            return errorMsg("Ooops! An error has been occured :(")
 
         flash("Your username has been updated!")
 
@@ -465,7 +465,7 @@ def changeUsername():
 #         # * db.execute("DELETE") returns the number of rows deleted
 #         # check if the row with given id was deleted
 #         if deleted_row == 0:
-#             return errorMsg("Sorry, an error occured :(")
+#             return errorMsg("Sorry, An error has been occured :(")
 
 #         flash("Refuel log deleted!")
 
@@ -489,7 +489,7 @@ def deleteRefuel(id):
         try:
             db.execute("DELETE FROM refuels WHERE id=?", id)
         except:
-            return errorMsg("Ooops! An error occured while deleting from refuels table :(")
+            return errorMsg("Ooops! An error has been occured while deleting from refuels table :(")
 
         flash("Transaction has been deleted!")
 
@@ -519,12 +519,12 @@ def deleteVehicle(id):
             try:
                 db.execute("DELETE FROM refuels WHERE vehicle_id=?", id)
             except:
-                return errorMsg("Ooops! An error occured while deleting from refuels table :( ")
+                return errorMsg("Ooops! An error has been occured while deleting from refuels table :( ")
 
         try:
             db.execute("DELETE FROM vehicles WHERE id=?", id)
         except:
-            return errorMsg("Ooops! An error occured while deleting from vehicles table :(")
+            return errorMsg("Ooops! An error has been occured while deleting from vehicles table :(")
 
         flash(f"{vehicle} has been deleted!")
 
@@ -566,7 +566,7 @@ def deleteVehicle(id):
 #             deleted_rows_refuels = db.execute(
 #                 "DELETE FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
 #             if deleted_rows_refuels == 0:
-#                 return errorMsg("Sorry, an error occured :(")
+#                 return errorMsg("Sorry, An error has been occured :(")
 
 #         # * db.execute("DELETE") returns the number of rows deleted
 #         # check if the row was deleted
@@ -574,7 +574,7 @@ def deleteVehicle(id):
 #                                            vehicle_to_del, session["user_id"])
 
 #         if deleted_rows_vehicles == 0:
-#             return errorMsg("Sorry, an error occured :(")
+#             return errorMsg("Sorry, An error has been occured :(")
 #         else:
 #             flash(
 #                 f'"{vehicle_to_del}" & its transactions removed from the list!')
@@ -698,7 +698,7 @@ def edit(id):
             db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=?, vehicle_name=? WHERE id=?",
                        date, distance, volume, price, total_price, vehicle_id, vehicle_name, id)
         except:
-            return errorMsg("Sorry, an error occured :(")
+            return errorMsg("Ooops! An error has been occured :(")
 
         flash("Entry has been updated succesfully!")
 
@@ -767,8 +767,10 @@ def editVehicle(id):
         try:
             db.execute("UPDATE vehicles SET name=?, license_plate=? WHERE user_id=? AND id=?",
                        vehicle_name, license_plate, session["user_id"], id)
+            db.execute(
+                "UPDATE refuels SET vehicle_name=? WHERE vehicle_id=?", vehicle_name, id)
         except:
-            return errorMsg("Ooopps! An error occured :(")
+            return errorMsg("Ooops! An error has been occured :(")
 
         flash("Vehicle's information updated!")
 
@@ -924,7 +926,7 @@ def signup():
         new_user_id = db.execute(
             "INSERT INTO users (username, hash) VALUES(?, ?)", username, hash)
         if not new_user_id:
-            return errorMsg("Sorry, an error occured!")
+            return errorMsg("Ooops! An error has been occured!")
 
         # Log the user in
         session["user_id"] = new_user_id
@@ -1006,7 +1008,7 @@ def vehicles():
             db.execute("INSERT INTO vehicles (name, license_plate, date, user_id) VALUES(?, ?, ?, ?)",
                        vehicle_name, license_plate, date, session["user_id"])
         except:
-            return errorMsg("Sorry, an error occured :(")
+            return errorMsg("Ooops! An error has been occured :(")
 
         # select updated version of data
         vehicles_db_uptd = db.execute(
