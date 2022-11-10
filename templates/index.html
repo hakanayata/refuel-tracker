@@ -33,7 +33,7 @@ Home Page
 
         </div>
 
-        <button class="btn btn-success w-sm-80 mx-auto mt-3 px-4"> Add Refuel Transaction</button>
+        <button class="btn btn-success w-sm-80 mx-auto mt-3 px-4">Add Refuel Transaction</button>
 
     </form>
 
@@ -56,7 +56,7 @@ Home Page
                     <th>Fuel Volume Added</th>
                     <th>Unit Price</th>
                     <th>Total Price</th>
-                    <th>Modify</th>
+                    <th class="exclude-print">Modify</th>
                 </tr>
             </thead>
             <tbody>
@@ -72,7 +72,7 @@ Home Page
                     <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
                     <td>{{ refuel["price"] | cur(symbol) }}</td>
                     <td>{{ refuel["total_price"] | cur(symbol) }}</td>
-                    <td>
+                    <td class="exclude-print">
                         <a class="btn btn-outline-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
                             name="{{ refuel['id'] }}"> ✎ </a>
 

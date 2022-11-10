@@ -24,7 +24,7 @@ Vehicles
             <th>License Plate</th>
             <th>Total Consumption Volume</th>
             <th>Total Expenses</th>
-            <th>Modify</th>
+            <th class="exclude-print">Modify</th>
         </tr>
     </thead>
     <tbody>
@@ -36,7 +36,7 @@ Vehicles
             <td>{{ vehicle["license_plate"] }}</td>
             <td> {{ vehicle["liters"] | vol(volume_unit) }} </td>
             <td> {{ vehicle["expenses"] | cur(symbol) }} </td>
-            <td>
+            <td class="exclude-print">
                 <a class="btn btn-outline-warning modify-button" href="{{ url_for('editVehicle', id=vehicle['id']) }}"
                     name="{{ vehicle['name'] }}"> ✎ </a>
 
