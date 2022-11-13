@@ -5,7 +5,7 @@
 
 ## Description: Web-based app built with python, js, and bootstrap
 
-This web application was made as a [final project](https://cs50.harvard.edu/x/2022/project/) for the [Harvard's Introduction to Computer Science](https://www.edx.org/course/introduction-computer-science-harvardx-cs50x) course. The goal was stitching together all of the languages learned and building full fledged we application.
+This web application was made as a [final project](https://cs50.harvard.edu/x/2022/project/) for the [Harvard's Introduction to Computer Science](https://www.edx.org/course/introduction-computer-science-harvardx-cs50x) course. The goal was stitching together all of the languages learned during the course and building full fledged web application.
 
 Refuel Tracker App obliges users to keep track of the fuel consumption of their vehicles.
 
