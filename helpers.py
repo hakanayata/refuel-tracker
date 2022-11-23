@@ -57,7 +57,7 @@ def vol(value, unit):
 
 
 def validate_password(password):
-    """Validate password"""
+    """Validates password"""
 
     special_chars = ['!', '@', '#', '$', '%', '&', '*', '+', '.']
 
