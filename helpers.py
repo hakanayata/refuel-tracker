@@ -87,7 +87,7 @@ def validate_password(password):
         return result, message
 
     # check if special char exist
-    if not any(chars in special_chars for chars in password):
+    if not any(char in special_chars for char in password):
         message = "Password should contain at least one of these '!, @, #, $, %, &, *, +, .' special characters!"
         result = False
         return result, message
