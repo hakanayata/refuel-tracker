@@ -1,7 +1,7 @@
 # REFUEL TRACKER :fuelpump:
 ### A web-based application helping users to keep track of their fuel consumption
 #### Harvard CS50: Introduction to Computer Science - Final Project
-##### Watch demo at: www.youtube.com
+##### Watch demo: [YouTube](https://youtu.be/LfjeUgx_3V4)
 
 ## Description: Web-based app built with python, js, and bootstrap
 
