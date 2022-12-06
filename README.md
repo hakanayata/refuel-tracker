@@ -53,7 +53,7 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
 - Adding some visual features: light/dark mode, animations
 - Implementing Face ID/Touch ID on login page
 - Allowing users to import an existing table and start adding new entries on top of that table. 
-- Using a more advanced database management system than SQLite.
+- Using a more advanced database management system other than SQLite.
 - Making use of Javascript's `navigator.geolocation.getCurrentPosition() ` function and adding a Location field to the table, allowing users to add location to their refuel transaction.
 
 
