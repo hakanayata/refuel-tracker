@@ -34,12 +34,12 @@ Session(app)
 
 # Configure CS50 Library to use SQLite database
 # database replaced from local
-db = SQL("sqlite:///refueltracker.db")
+# db = SQL("sqlite:///refueltracker.db")
 # to heroku
-# uri = os.getenv("DATABASE_URL")
-# if uri.startswith("postgres://"):
-#     uri = uri.replace("postgres://", "postgresql://")
-# db = SQL(uri)
+uri = os.getenv("DATABASE_URL")
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://")
+db = SQL(uri)
 
 # Make sure API key is set
 # if not os.environ.get("API_KEY"):
