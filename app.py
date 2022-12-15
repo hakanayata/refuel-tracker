@@ -254,7 +254,7 @@ def index():
             months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1] for x in chart_db_upd]
         values_upd = [x["total_price"] for x in chart_db_upd]
 
-        return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, stats=statistics_db_upd, show=onShow_upd, username=username)
+        return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, show=onShow_upd, username=username)
 
     # user reached route via PUT, DELETE
     else:
