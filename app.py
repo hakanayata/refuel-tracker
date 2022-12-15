@@ -4,6 +4,7 @@
 
 from crypt import methods
 import os
+import datetime
 import re
 
 from cs50 import SQL
@@ -68,10 +69,14 @@ db = SQL(uri)
 
 # ***** CONFIGURING ENDS HERE *****
 
+# ! distance, volume jinja formatters don't work
+# ! add minlength and maxlength to password fields on html pages.
 # ! changing vehicle name doesn't affect old transactions
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
 # ? chart date filter
 # ? total distance traveled stat on vehicles page
+
+# * 1. all instances of select datetime('now','localtime') changed to select timestamp with time zone 'one'
 
 
 @app.after_request
@@ -96,8 +101,11 @@ def index():
     volume_unit = user_db[0]["volume_unit"]
 
     # set default value of date input to now
-    date_db = db.execute("SELECT datetime('now', 'localtime')")
-    date_now = date_db[0]["datetime('now', 'localtime')"]
+    # returns "2022-12-11 22:47:56"
+    # date_db = db.execute("SELECT CURRENT_TIMESTAMP(0)")
+    # print(f"########{date_db[0]}")
+    # print(f"########{date_db[0]['current_timestamp']}")
+    # date_now = date_db[0]["current_timestamp"]
 
     # select vehicles to show in dropdown menu
     vehicles = db.execute(
@@ -116,8 +124,9 @@ def index():
     ref_len = len(refuels_db)
 
     # query for total distance traveled & total liters & total expenses
+    # ! instead of GROUP BY vehicle_id -> temporarily vehicle_name
     statistics_db = db.execute(
-        "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_id", session["user_id"])
+        "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_name", session["user_id"])
 
     # stats' table should show when one vehicle has at least 2 transactions
     onShow = False
@@ -131,27 +140,40 @@ def index():
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     # query label (show day-month-year) and value (total fuel expense) to show on chart
+    # ? PostgreSQL version
     chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
+        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", session["user_id"])
+    # ? SQLite version
+    # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
 
-    labels = [months[int(x["date"][5:7]) - 1] for x in chart_db]
+    # print(f"#######$$$$$$%%%% {chart_db} ######$$$$$$$$%%%%%%")
+    # print(f"#######$$$$$$%%%% {chart_db[0]['mon']} ######$$$$$$$$%%%%%%")
+    # print(f"#######$$$$$$%%%% {chart_db[0]['mon'].strftime('%Y-%m-%d')} ######$$$$$$$$%%%%%%")
+    labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
+              for x in chart_db]
     values = [x["total_price"] for x in chart_db]
 
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
     if request.method == "GET":
-        return render_template("index.html", vehicles=vehicles, refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username, now=date_now)
+        return render_template("index.html", vehicles=vehicles, refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username)
 
     # * POST carries request parameter in message body
     # user reached route via POST, as by submitting a form via POST
     elif request.method == "POST":
-        # date_db = db.execute("SELECT datetime('now', 'localtime')")
-        # date = date_db[0]["datetime('now', 'localtime')"]
-        date = request.form.get("date")
-        if not date:
-            return errorMsg("Invalid date")
-        else:
-            date = date.replace("T", " ")
+
+        # date = request.form.get("date")
+        # if not date:
+        #     return errorMsg("Invalid date")
+
+        # time = request.form.get("time")
+        # if not time:
+        #     return errorMsg("Invalid time")
+
+        try:
+            date = request.form.get("datetime")
+        except:
+            return errorMsg("An error has been occured during the process of assigning a value to date!")
 
         selected_vehicle = request.form.get("vehicle")
         # validation
@@ -213,8 +235,9 @@ def index():
             "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
 
         # query updated statistics
+        # ! instead of GROUP BY vehicle_id -> temporarily vehicle_name
         statistics_db_upd = db.execute(
-            "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_id", session["user_id"])
+            "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_name", session["user_id"])
 
         onShow_upd = False
         for stat in statistics_db_upd:
@@ -224,28 +247,29 @@ def index():
 
         # retrieve updated refuels to show on chart
         chart_db_upd = db.execute(
-            "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
+            "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", session["user_id"])
 
         # updated chart's labes & values
-        labels_upd = [months[int(x["date"][5:7]) - 1] for x in chart_db_upd]
+        labels_upd = [
+            months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1] for x in chart_db_upd]
         values_upd = [x["total_price"] for x in chart_db_upd]
 
-        return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, stats=statistics_db_upd, show=onShow_upd, username=username, now=date_now)
+        return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, stats=statistics_db_upd, show=onShow_upd, username=username)
 
     # user reached route via PUT, DELETE
     else:
         return errorMsg("You're NOT authorized!")
 
 
-@app.route("/account")
-@login_required
+@ app.route("/account")
+@ login_required
 def account():
     """Shows account settings"""
     return render_template("account.html")
 
 
-@app.route("/change-units", methods=["GET", "POST"])
-@login_required
+@ app.route("/change-units", methods=["GET", "POST"])
+@ login_required
 def changeCur():
     """Show currency settings"""
 
@@ -584,6 +608,7 @@ def deleteVehicle(id):
 #         return errorMsg("Not authorized for this action!")
 
 
+# ! is this function necessary?
 @app.route("/edit-refuel", methods=["GET", "POST"])
 @login_required
 def editRefuel():
@@ -622,11 +647,13 @@ def edit(id):
         return errorMsg("Not found!")
 
     # set default value of date input to now
-    # date_db = db.execute("SELECT datetime('now', 'localtime')")
-    # date = date_db[0]["datetime('now', 'localtime')"]
+    # date_db = db.execute("SELECT TIMESTAMP WITH TIME ZONE 'NOW'")
+    # date = date_db[0]["TIMESTAMP WITH TIME ZONE 'NOW'"]
 
     # show old date as placeholder
     date = refuel_db[0]["date"]
+    print(f"OOOOOOOOOOOOO {date} OOOOOOOOOOOOO")
+    # 2022-12-14T16:16:12.117Z
 
     # retrieve user's vehicles' names
     users_vehicles_db = db.execute(
@@ -645,16 +672,18 @@ def edit(id):
     elif request.method == "POST":
 
         # date submitted by user
-        date = request.form.get("date")
+        date = request.form.get("datetime")
 
         # date validation
-        if not date:
-            return errorMsg("Must provide date!")
+        try:
+            date = request.form.get("datetime")
+        except:
+            return errorMsg("An error has been occured during the process of assigning a value to date!")
 
         # date has to be converted into sql format!
         # 2022-10-10T00:00:00 -> 2022-10-10 00:00:00
-        else:
-            date = date.replace("T", " ")
+        # else:
+        #     date = date.replace("T", " ")
 
         distance = request.form.get("distance")
         # distance validation
@@ -811,11 +840,17 @@ def history():
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     # sum (group) each month's transactions for more concise/clean chart
+
+    # PostgreSQL version (shows last 12 months)
     chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
+        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '1 year')) GROUP BY mon", session["user_id"])
+
+    # SQLite version (shows current year only)
+    # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
 
     # pick month part from the string to show as label of the chart
-    labels = [months[int(x["date"][5:7]) - 1] for x in chart_db]
+    labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
+              for x in chart_db]
 
     # total expense for that specific month
     values = [x["total_price"] for x in chart_db]
@@ -922,10 +957,15 @@ def signup():
         # hash password
         hash = generate_password_hash(password)
 
+        # todo: add register date to table
+        register_date_db = db.execute("SELECT timestamp with time zone 'now'")
+        register_date = register_date_db[0]["timestamptz"]
+
         # INSERT INTO db new user's information
-        new_user_id = db.execute(
-            "INSERT INTO users (username, hash) VALUES(?, ?)", username, hash)
-        if not new_user_id:
+        try:
+            new_user_id = db.execute(
+                "INSERT INTO users (username, hash, register_date) VALUES(?, ?, ?)", username, hash, register_date)
+        except:
             return errorMsg("Ooops! An error has been occured!")
 
         # Log the user in
@@ -937,7 +977,7 @@ def signup():
         # send user to the homepage
         return redirect("/")
 
-    # if user somehow send request by "DELETE"/"PUT" methods
+    # if user somehow send request via "DELETE"/"PUT" methods
     else:
         return errorMsg("This method is not allowed!")
 
@@ -1000,8 +1040,8 @@ def vehicles():
             return errorMsg("Vehicle name can not end with space character(s)")
 
         # retrieve current local date & time
-        date_db = db.execute("SELECT datetime('now', 'localtime')")
-        date = date_db[0]["datetime('now', 'localtime')"]
+        date_db = db.execute("SELECT TIMESTAMP WITH TIME ZONE 'NOW'")
+        date = date_db[0]["timestamptz"]
 
         # add new vehicle to the vehicles table
         try:

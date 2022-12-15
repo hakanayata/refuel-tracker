@@ -24,10 +24,14 @@ th {
 input[type="text"],
 input[type="number"],
 input[type="password"],
-/* input[type="submit"], */
-input[type="datetime-local"],
 .form-select {
     width: 280px;
+    background-color: #fbfbfb;
+}
+
+input[type="date"],
+input[type="time"] {
+    width: 140px;
     background-color: #fbfbfb;
 }
 
@@ -48,10 +52,14 @@ input[type="datetime-local"],
 
     input[type="text"],
     input[type="number"],
-    input[type="password"],
-    /* input[type="submit"], */
-    input[type="datetime-local"] {
+    input[type="password"] {
         width: 80% !important;
+        background-color: #fbfbfb;
+    }
+
+    input[type="date"],
+    input[type="time"] {
+        width: 40% !important;
         background-color: #fbfbfb;
     }
 
@@ -63,11 +71,13 @@ input[type="datetime-local"],
         width: 80%;
     }
 
+    .w-sm-50 {
+        width: 50%;
+    }
+
     .table {
         font-size: 14px;
     }
-
-
 
 }
 

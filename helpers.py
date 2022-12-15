@@ -1,6 +1,7 @@
 # import os
 # import requests
 # import urllib.parse
+from datetime import datetime
 
 from flask import redirect, render_template, request, session
 from functools import wraps
@@ -21,7 +22,12 @@ def cur(value, currency):
 
 def dt(value):
     """Format value as date."""
-    return f"{value}".replace(" ", "  |  ")
+    # 2022-12-14T16:16:12.117Z
+    year = int(value[0:4])
+    month = int(value[5:7])
+    day = int(value[8:10])
+    d = datetime(year, month, day)
+    return f"{d.strftime('%d. %b %Y')}"
 
 
 def errorMsg(message):
