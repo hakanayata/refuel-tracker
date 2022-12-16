@@ -79,9 +79,10 @@ input[type="time"] {
         font-size: 14px;
     }
 
-    /* .modal.fade {
-        ...
-    } */
+    .modal.fade {
+        margin: 0 20%;
+        max-width: 240px;
+    }
 
 }
 
