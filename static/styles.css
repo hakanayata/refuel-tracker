@@ -79,10 +79,20 @@ input[type="time"] {
         font-size: 14px;
     }
 
-    .modal.fade {
-        margin-top: -25%;
-        max-width: 260px;
-    }
+    /* .modal.fade {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+        width: auto;
+        margin: 0;
+
+        &.fade.in {
+            top: 20px;
+        }
+
+    } */
 
 }
 
