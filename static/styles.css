@@ -80,8 +80,8 @@ input[type="time"] {
     }
 
     .modal.fade {
-        margin: 0 20%;
-        max-width: 240px;
+        margin-top: -25%;
+        max-width: 260px;
     }
 
 }
