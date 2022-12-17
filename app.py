@@ -40,7 +40,9 @@ db = SQL(uri)
 
 # ***** CONFIGURING ENDS HERE *****
 
-# ! distance, volume jinja formatters don't work
+# todo: database vehicle_name should be removed from transactions table
+# todo: print should show table borders
+
 # ! add minlength and maxlength to password fields on html pages.
 # ! changing vehicle name doesn't affect old transactions
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
