@@ -68,9 +68,9 @@ def validate_password(password):
     special_chars = ['!', '@', '#', '$', '%', '&', '*', '+', '.']
 
     # check for pass length
-    if not len(password) >= 8 or not len(password) <= 16:
-        print("Password length must be between 8 and 16!")
-        message = "Password length must be between 8 and 16!"
+    if not len(password) >= 8 or not len(password) <= 20:
+        print("Password length must be between 8 and 20!")
+        message = "Password length must be between 8 and 20!"
         result = False
         return result, message
 
