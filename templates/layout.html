@@ -14,12 +14,12 @@
         crossorigin="anonymous"></script>
 
     <!-- Google Fonts Roboto Condensed -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&display=swap"
-        rel="stylesheet">
+        rel="stylesheet"> -->
     <!-- import javascript file -->
-    <!-- <script src="/static/script.js"></script> -->
+    <script src="/static/script.js"></script>
     <!-- Passage.id authentication implementation  -->
     <!-- <passage-auth app-id="vKXDkNnZRyHHc4M7LmbDfgYy"></passage-auth> -->
     <!-- <script src="https://psg.so/web.js"></script> -->
@@ -37,30 +37,30 @@
 
 <body class="bg-dark">
 
-    <!-- <nav class="bg-dark border navbar navbar-expand-lg navbar-dark">
+    <nav class="bg-dark border navbar navbar-expand-lg navbar-dark">
 
-        <div class="container-fluid"> -->
-    <!-- navbar-brand for project name -->
-    <!-- <a href="/" class="navbar-brand">Refuel Tracker</a> -->
-    <!-- hamburger menu button for navbar-expand-lg+ -->
-    <!-- <button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse"
+        <div class="container-fluid">
+            <!-- navbar-brand for project name -->
+            <a href="/" class="navbar-brand">Refuel Tracker</a>
+            <!-- hamburger menu button for navbar-expand-lg+ -->
+            <button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
                 aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
-            </button> -->
-    <!-- collapse & navbar-collapse for grouping and hiding navbar contents by a parent breakpoint -->
-    <!-- <div class="collapse navbar-collapse" id="navbarSupportedContent"> -->
+            </button>
+            <!-- collapse & navbar-collapse for grouping and hiding navbar contents by a parent breakpoint -->
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
 
 
-    <!-- {% if session["user_id"] %} -->
-    <!-- navbar-nav for a full-height and lightweight navi -->
-    <!-- <ul class="navbar-nav me-auto my-2">
+                {% if session["user_id"] %}
+                <!-- navbar-nav for a full-height and lightweight navi -->
+                <ul class="navbar-nav me-auto my-2">
                     <li class="nav-item"><a class="nav-link" href="/">HOME</a></li>
                     <li class="nav-item"><a class="nav-link" href="/history">HISTORY</a></li>
                     <li class="nav-item"><a class="nav-link" href="/vehicles">VEHICLES</a></li>
-                </ul> -->
-    <!-- ms auto for pushing items to the right -->
-    <!-- <ul class="navbar-nav ms-auto my-2">
+                </ul>
+                <!-- ms auto for pushing items to the right -->
+                <ul class="navbar-nav ms-auto my-2">
                     <li class="nav-item dropdown">
                         <a aria-haspopup="true" aria-expanded="false" class="nav-link dropdown-toggle" href="/account"
                             id="navbarDropdown" role="button" data-bs-toggle="dropdown">ACCOUNT</a>
@@ -71,9 +71,9 @@
                         </div>
                     </li>
                     <li class="nav-item"><a class="nav-link" href="/logout">LOG OUT</a></li>
-                </ul> -->
+                </ul>
 
-    <!-- {% else %}
+                {% else %}
                 <ul class="navbar-nav ms-auto my-2">
                     <li class="nav-item"><a class="nav-link" href="/signup">SIGN UP</a></li>
                     <li class="nav-item"><a class="nav-link" href="/login">LOG IN</a></li>
@@ -85,16 +85,16 @@
 
         </div>
 
-    </nav> -->
+    </nav>
 
     <!-- part from cs50 finance -->
-    <!-- {% if get_flashed_messages() %}
+    {% if get_flashed_messages() %}
     <header>
         <div class="alert alert-primary mb-0 text-center" role="alert">
             {{ get_flashed_messages() | join(" ") }}
         </div>
     </header>
-    {% endif %} -->
+    {% endif %}
 
 
     <main class="container-fluid py-4 text-center">
