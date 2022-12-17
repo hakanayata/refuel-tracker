@@ -81,8 +81,13 @@ input[type="time"] {
 
 }
 
+.modal {
+    width: 100vw !important;
+    height: 100vh !important;
+}
 
-/* @media print {
+
+@media print {
     body * {
         visibility: hidden;
     }
@@ -104,4 +109,4 @@ input[type="time"] {
         display: none;
     }
 
-} */
+}
