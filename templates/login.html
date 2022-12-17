@@ -11,7 +11,8 @@ Log In
         <input class="form-control mx-auto w-sm-92" name="username" type="text" placeholder="Username">
     </div>
     <div class="mb-4">
-        <input class="form-control mx-auto w-sm-92" name="password" type="password" placeholder="Password">
+        <input class="form-control mx-auto w-sm-92" name="password" type="password" placeholder="Password" minlength="8"
+            maxlength="20">
     </div>
     <div class="d-grid gap-2 d-md-block mx-auto">
         <button class="btn btn-success mx-auto w-sm-92" type="submit">Log In</button>
@@ -22,8 +23,6 @@ Log In
                 ➚</a>
         </p>
     </div>
-
-    <!-- <passage-auth app-id="vKXDkNnZRyHHc4M7LmbDfgYy"></passage-auth> -->
 
 </form>
 {% endblock %}

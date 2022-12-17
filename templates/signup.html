@@ -13,13 +13,16 @@ Sign Up
     </div>
     <div class="mb-4">
         <input class="form-control mx-auto w-sm-92" name="password" type="password" placeholder="Password" minlength="8"
-            maxlength="16">
+            maxlength="20" id="password-signup"
+            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*_=+-.]).{8,20}$"
+            title="Passwords length must be between 8 and 20 characters, and contain at least 1 lowercase, 1 uppercase letter and 1 special character [!@#$%^&*_=+-.]!">
     </div>
     <div class="mb-4">
-        <input class="form-control mx-auto w-sm-92" name="confirmation" type="password" placeholder="Password (again)">
+        <input class="form-control mx-auto w-sm-92" name="confirmation" type="password" placeholder="Password (again)"
+            id="password-confirm-signup" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*_=+-.]).{8,20}$">
     </div>
     <div class="d-grid gap-2 d-md-block mx-auto w-auto">
-        <button class="btn btn-success mx-auto w-sm-92" type="submit">Sign Up</button>
+        <button class="btn btn-success mx-auto w-sm-92" type="submit" id="btn-signup">Sign Up</button>
     </div>
 
 </form>
