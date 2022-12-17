@@ -80,8 +80,8 @@ input[type="time"] {
     }
 
     * {
-        padding-left: 4px;
-        padding-right: 4px;
+        padding-left: 2px !important;
+        padding-right: 2px !important;
     }
 
 }
