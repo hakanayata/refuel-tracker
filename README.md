@@ -2,7 +2,7 @@
 ### A web-based application helping users to keep track of their fuel consumption
 #### Harvard CS50: Introduction to Computer Science - Final Project
 ##### Watch demo: [YouTube](https://youtu.be/LfjeUgx_3V4)
-###### App: [Refuel Tracker](refuel-tracker.hakanayata.com)
+###### App: [Refuel Tracker](https://refuel-tracker.www.hakanayata.com)
 
 ## Description: Web-based app built with python, js, and bootstrap
 
