@@ -79,7 +79,7 @@ input[type="time"] {
         font-size: 14px;
     }
 
-    /* .modal.fade {
+    .modal.fade {
         position: fixed;
         top: 20px;
         left: 20px;
@@ -88,11 +88,11 @@ input[type="time"] {
         width: auto;
         margin: 0;
 
-        &.fade.in {
+        /* &.fade.in {
             top: 20px;
-        }
+        } */
 
-    } */
+    }
 
 }
 
