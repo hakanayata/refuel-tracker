@@ -1,7 +1,16 @@
-{% extends "layout.html" %} {% block title %} Home Page {% endblock %} {% block
-head %} {{ super() }}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-{% endblock %} {% block main %} {% if vehicles %}
+{% extends "layout.html" %}
+
+{% block title %} Home Page {% endblock %}
+{% block head %}
+{{ super() }}
+<!-- ? These script files moved to the bottom -->
+<!-- <script src="../static/dateHandler.js"></script>
+<script src="/static/script.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script> -->
+{% endblock %}
+{% block main %}
+
+{% if vehicles %}
 <!-- <section> -->
 <form action="/" autocomplete="off" method="post">
   <div class="my-4">
@@ -176,6 +185,10 @@ head %} {{ super() }}
   </div>
 </div>
 
+
+<!-- js library for chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
 <script>
   const ctx = document.getElementById('myChart').getContext('2d');
   const myChart = new Chart(ctx, {
@@ -228,6 +241,12 @@ head %} {{ super() }}
   }
   });
 </script>
+
+
+<!-- JS file where date is handled -->
+<script src="../static/dateHandler.js"></script>
+<!-- JS file where flash and print are handled -->
+<script src="/static/script.js"></script>
 
 {% endif %} {% else %}
 <h3 class="text-center text-light my-5">Welcome, {{ username }}!</h3>
