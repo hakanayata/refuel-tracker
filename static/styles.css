@@ -79,7 +79,7 @@ input[type="time"] {
 } */
 
 
-@media print {
+/* @media print {
     body * {
         visibility: hidden;
     }
@@ -101,4 +101,4 @@ input[type="time"] {
         display: none;
     }
 
-}
+} */
