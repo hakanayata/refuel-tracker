@@ -39,10 +39,11 @@ input[type="time"] {
 }
 
 .btn.modify-button {
-    height: 42.8px;
-    width: 42.8px;
-    font-size: 1.3rem;
+    height: 36px;
+    width: 38px;
+    font-size: 0.9rem;
     margin: 3px;
+    text-align: center;
 }
 
 @media only screen and (max-width: 768px) {
