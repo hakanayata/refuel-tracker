@@ -5,7 +5,7 @@ head %} {{ super() }}
 <!-- <section> -->
 <form action="/" autocomplete="off" method="post">
   <div class="my-4">
-    <select class="form-select mx-auto w-sm-80 mb-4" name="vehicle">
+    <select class="form-select mx-auto w-sm-92 mb-4" name="vehicle">
       <option selected value="{{ vehicles[0]['name'] }}">
         {{ vehicles[0]['name'] }}
       </option>
@@ -18,24 +18,24 @@ head %} {{ super() }}
     <input class="form-control my-2 mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
       step="any" id="index-timepicker" />
 
-    <input class="form-control my-2 mx-auto w-sm-80" type="text" name="datetime" id="index-date"
+    <input class="form-control my-2 mx-auto w-sm-92" type="text" name="datetime" id="index-date"
       style="display: none;" />
 
-    <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" name="distance"
+    <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" name="distance"
       placeholder="Current odometer reading" required />
-    <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" step="any" name="volume"
+    <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" step="any" name="volume"
       placeholder="Fuel volume added" required />
-    <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" step="any" name="price"
+    <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" step="any" name="price"
       placeholder="Unit price" required />
   </div>
 
-  <button class="btn btn-success w-sm-80 mx-auto mt-3 px-4">
+  <button class="btn btn-success w-sm-92 mx-auto mt-3 px-4">
     Add Refuel Transaction
   </button>
 </form>
 
 
-<hr class="text-light mx-auto w-75 w-sm-80 mt-5" />
+<hr class="text-light mx-auto w-75 w-sm-92 mt-5" />
 <!-- <hr class="mx-auto w-25"> -->
 {% if ref_len > 0 %}
 <div>
@@ -117,7 +117,7 @@ head %} {{ super() }}
   </table>
 </div>
 
-<hr class="text-light mx-auto w-75 w-sm-80 mt-5" />
+<hr class="text-light mx-auto w-75 w-sm-92 mt-5" />
 
 {% if show %}
 <table
@@ -149,7 +149,7 @@ head %} {{ super() }}
   </tbody>
 </table>
 
-<hr class="text-light mx-auto w-75 w-sm-80 my-5" />
+<hr class="text-light mx-auto w-75 w-sm-92 my-5" />
 {% endif %}
 
 <!-- <div class="my-4 mx-auto bg-light w-50">

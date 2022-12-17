@@ -1,7 +1,3 @@
-# from crypt import methods
-# from distutils.log import error
-# from passageidentity import Passage
-
 from crypt import methods
 import os
 import datetime
@@ -41,31 +37,6 @@ uri = os.getenv("DATABASE_URL")
 if uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://")
 db = SQL(uri)
-
-# Make sure API key is set
-# if not os.environ.get("API_KEY"):
-#     raise RuntimeError("API_KEY not set")
-
-
-# # Passage.id authentication implementation
-# PASSAGE_APP_ID = os.environ.get("PASSAGE_APP_ID")
-
-
-# class AuthenticationMiddleware(object):
-#     def __init__(self, app):
-#         self.app = app
-
-#     def __call__(self, environ, start_response):
-#         request = Request(environ)
-#         psg = Passage(PASSAGE_APP_ID)
-#         try:
-#             user = psg.authenticateRequest(request)
-#         except:
-#             ret = Response(u'Authorization failed',
-#                            mimetype='text/plain', status=401)
-#             return ret(environ, start_response)
-#         environ['user'] = user
-#         return self.app(environ, start_response)
 
 # ***** CONFIGURING ENDS HERE *****
 
@@ -457,48 +428,6 @@ def changeUsername():
         return errorMsg("You're not authorized for this action!")
 
 
-# @app.route("/delete-refuel", methods=["GET", "POST"])
-# @login_required
-# def delRefuel():
-#     """Deletes refuel transactions"""
-#     # query user's refuel transactions
-#     refuels_db = db.execute(
-#         "SELECT * FROM refuels WHERE user_id=?", session["user_id"])
-
-#     # user reached via GET
-#     if request.method == "GET":
-#         return render_template("delete-refuel.html", refuels=refuels_db)
-
-#     # user reached via POST
-#     elif request.method == "POST":
-#         # refuel transaction to be deleted, submitted by user
-#         refuel_del = request.form.get("refuel")
-
-#         # ensure valid refuel submitted by user
-#         if not refuel_del:
-#             return errorMsg("invalid selection!")
-
-#         # retrieve id of the refuel transaction
-#         refuel_del_id = db.execute(
-#             "SELECT id FROM refuels WHERE date=?", refuel_del)
-#         id = refuel_del_id[0]['id']
-
-#         deleted_row = db.execute("DELETE FROM refuels WHERE id=? AND user_id=?",
-#                                  id, session["user_id"])
-
-#         # * db.execute("DELETE") returns the number of rows deleted
-#         # check if the row with given id was deleted
-#         if deleted_row == 0:
-#             return errorMsg("Sorry, An error has been occured :(")
-
-#         flash("Refuel log deleted!")
-
-#         return redirect("/")
-#     # user reached via PUT or DELETE
-#     else:
-#         return errorMsg("You're not authorized for this action!")
-
-
 @app.route("/delete-refuel/<int:id>", methods=["POST"])
 @login_required
 def deleteRefuel(id):
@@ -511,6 +440,7 @@ def deleteRefuel(id):
             return errorMsg("Not Found!")
 
         try:
+            # * db.execute("DELETE") returns the number of rows deleted
             db.execute("DELETE FROM refuels WHERE id=?", id)
         except:
             return errorMsg("Ooops! An error has been occured while deleting from refuels table :(")
@@ -556,82 +486,6 @@ def deleteVehicle(id):
 
     else:
         return errorMsg("You are not authorized for this action!")
-
-
-# @app.route("/delete-vehicle", methods=["GET", "POST"])
-# @login_required
-# def delVehicle():
-#     """Deletes vehicle"""
-
-#     # query vehicles owned by user
-#     vehicles_db = db.execute(
-#         "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
-
-#     # user reached via GET
-#     if request.method == "GET":
-#         return render_template("delete-vehicle.html", vehicles=vehicles_db)
-
-#     # user reached via POST
-#     elif request.method == "POST":
-#         # vehicle name to be deleted (submitted by user)
-#         vehicle_to_del = request.form.get("vehicle")
-#         # ensure submit is valid
-#         if not vehicle_to_del:
-#             return errorMsg("Must provide an option to delete")
-
-#         # ? if vehicle has transaction in refuels table, it should also be removed after vehicle deletion
-#         # retrieve count of refuel transactions of the vehicle that needs to be deleted
-#         vehicles_transactions_db = db.execute(
-#             "SELECT COUNT(*) AS count FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
-#         # print(f"### vehilces_transactons_db -> {vehicles_transactions_db}")
-
-#         # ! is this a good thing? if there's transaction for the vehicle, then remove those as well.
-#         if vehicles_transactions_db[0]["count"] > 0:
-#             deleted_rows_refuels = db.execute(
-#                 "DELETE FROM refuels WHERE user_id=? AND vehicle_name=?", session["user_id"], vehicle_to_del)
-#             if deleted_rows_refuels == 0:
-#                 return errorMsg("Sorry, An error has been occured :(")
-
-#         # * db.execute("DELETE") returns the number of rows deleted
-#         # check if the row was deleted
-#         deleted_rows_vehicles = db.execute("DELETE FROM vehicles WHERE name=? AND user_id=?",
-#                                            vehicle_to_del, session["user_id"])
-
-#         if deleted_rows_vehicles == 0:
-#             return errorMsg("Sorry, An error has been occured :(")
-#         else:
-#             flash(
-#                 f'"{vehicle_to_del}" & its transactions removed from the list!')
-#             return redirect("/vehicles")
-
-#     else:
-#         return errorMsg("Not authorized for this action!")
-
-
-# ! is this function necessary?
-@app.route("/edit-refuel", methods=["GET", "POST"])
-@login_required
-def editRefuel():
-    """Lets user pick which entry he wants to edit"""
-    # query user's every refuel transactions
-    refuels_db = db.execute(
-        "SELECT * FROM refuels WHERE user_id=?", session["user_id"])
-
-    if request.method == "GET":
-        return render_template("edit-refuel.html", refuels=refuels_db)
-    elif request.method == "POST":
-        # transaction's id submitted by user
-        refuel_id = request.form.get("refuel")
-
-        # ensure valid submission
-        if not refuel_id:
-            return errorMsg("Invalid selection!")
-
-        # send user to edit/id route with the id submitted by user
-        return redirect(url_for("edit", id=refuel_id))
-
-    else:
-        return errorMsg("Sorry, you're not authorized for this action!")
 
 
 @app.route("/edit/<int:id>", methods=["GET", "POST"])

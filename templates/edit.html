@@ -11,24 +11,24 @@ Edit Refuel Transaction
 <form action="/edit/{{id}}" autocomplete="off" method="post">
     <div class="my-4">
         <!-- 
-        <input class="form-control my-2 mx-auto w-sm-80" type="datetime-local" min="2010-01-01T00:00:00"
+        <input class="form-control my-2 mx-auto w-sm-92" type="datetime-local" min="2010-01-01T00:00:00"
             max="2038-01-01T00:00:00" name="date" value="{{ date[0:10] }}" step="any" required> -->
         <!-- new input -->
         <input class="form-control my-2 mx-auto w-sm-40" style="display: inline-block;" type="date" min="2016-01-01"
             max="2046-01-01" name="date" required step="any" id="edit-datepicker" value="{{ date[0:10] }}" />
         <input class="form-control my-2 mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
             step="any" id="edit-timepicker" value="{{ date[11:16] }}" />
-        <input class="form-control my-2 mx-auto w-sm-80" type="text" name="datetime" id="edit-date" value="{{ date }}"
+        <input class="form-control my-2 mx-auto w-sm-92" type="text" name="datetime" id="edit-date" value="{{ date }}"
             style="display: none;" />
 
-        <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" name="distance"
+        <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" name="distance"
             placeholder="{{refuel['distance']}}" required>
-        <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" step="any" name="volume"
+        <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" step="any" name="volume"
             placeholder="{{refuel['volume']}}" required>
-        <input class="form-control my-2 mx-auto w-sm-80" type="number" min="0" step="any" name="price"
+        <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" step="any" name="price"
             placeholder="{{refuel['price']}}" required>
 
-        <select class="form-select mx-auto w-sm-80 mb-4" name="vehicle">
+        <select class="form-select mx-auto w-sm-92 mb-4" name="vehicle">
             <option selected value="{{ refuel['vehicle_name'] }}">{{ refuel['vehicle_name'] }}</option>
             {% for vehicle in vehicles %}
             <option value="{{ vehicle }}">{{ vehicle }}</option>
@@ -37,7 +37,7 @@ Edit Refuel Transaction
 
     </div>
 
-    <button class="btn btn-outline-warning w-sm-80 mx-auto px-5"> Edit Entry </button>
+    <button class="btn btn-outline-warning w-sm-92 mx-auto px-5"> Edit Entry </button>
 
 </form>
 {% endblock %}

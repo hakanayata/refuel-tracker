@@ -7,12 +7,13 @@ Change Username
 {% block main %}
 <form action="/change-username" autocomplete="off" method="post">
     <div class="my-5">
-        <input required class="form-control mx-auto my-3 w-sm-80" type="text" name="old-username"
+        <input required class="form-control mx-auto my-3 w-sm-92" type="text" name="old-username"
             placeholder="Old username">
-        <input required class="form-control mx-auto my-3 w-sm-80" type="text" name="username" placeholder="New username">
-        <input required class="form-control mx-auto my-3 w-sm-80" type="text" name="confirmation"
+        <input required class="form-control mx-auto my-3 w-sm-92" type="text" name="username"
+            placeholder="New username">
+        <input required class="form-control mx-auto my-3 w-sm-92" type="text" name="confirmation"
             placeholder="Confirm new username">
-        <button class="btn btn-outline-warning mt-3 px-2 w-sm-80">Change Username</button>
+        <button class="btn btn-outline-warning mt-3 px-2 w-sm-92">Change Username</button>
     </div>
 </form>
 {% endblock %}
