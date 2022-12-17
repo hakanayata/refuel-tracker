@@ -1,4 +1,4 @@
-/* body {
+body {
     font-family: 'Roboto Condensed', sans-serif;
 }
 
@@ -43,9 +43,9 @@ input[type="time"] {
     width: 42.8px;
     font-size: 1.3rem;
     margin: 3px;
-} */
+}
 
-/* @media only screen and (max-width: 768px) {
+@media only screen and (max-width: 768px) {
 
     input[type="text"],
     input[type="number"],
@@ -76,10 +76,10 @@ input[type="time"] {
         font-size: 14px;
     }
 
-} */
+}
 
 
-/* @media print {
+@media print {
     body * {
         visibility: hidden;
     }
@@ -101,4 +101,4 @@ input[type="time"] {
         display: none;
     }
 
-} */
+}
