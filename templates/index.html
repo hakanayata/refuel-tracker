@@ -2,7 +2,7 @@
 head %} {{ super() }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 {% endblock %} {% block main %} {% if vehicles %}
-<section>
+<!-- <section>
   <form action="/" autocomplete="off" method="post">
     <div class="my-4">
       <select class="form-select mx-auto w-sm-80 mb-4" name="vehicle">
@@ -34,94 +34,94 @@ head %} {{ super() }}
     </button>
   </form>
 
-  <hr class="text-light mx-auto w-75 w-sm-80 mt-5" />
-  <!-- <hr class="mx-auto w-25"> -->
-  {% if ref_len > 0 %}
-  <div class="table-responsive-sm">
-    <table
-      class="align-middle caption-top my-4 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
-      <caption>
-        Most recent entries
-      </caption>
-      <thead class="align-middle">
-        <tr>
-          <th>#</th>
-          {% if veh_len > 1 %}
-          <th>Vehicle</th>
-          {% endif %}
-          <th>Date & Time</th>
-          <th>Odometer Reading</th>
-          <th>Fuel Volume Added</th>
-          <th>Unit Price</th>
-          <th>Total Price</th>
-          <th class="exclude-print">Modify</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for refuel in refuels %}
-        <tr>
-          <td>{{ loop.index }}</td>
-          {% if veh_len > 1 %}
-          <td>{{ refuel["vehicle_name"] }}</td>
-          {% endif %}
-          <td>{{ refuel["date"] | dt}}</td>
-          <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
-          <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
-          <td>{{ refuel["price"] | cur(symbol) }}</td>
-          <td>{{ refuel["total_price"] | cur(symbol) }}</td>
-          <td class="exclude-print">
-            <a class="btn btn-outline-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
-              name="{{ refuel['id'] }}">
-              ✎
-            </a>
+  <hr class="text-light mx-auto w-75 w-sm-80 mt-5" /> -->
+<!-- <hr class="mx-auto w-25"> -->
+{% if ref_len > 0 %}
+<div class="table-responsive-sm">
+  <table
+    class="align-middle caption-top my-4 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
+    <caption>
+      Most recent entries
+    </caption>
+    <thead class="align-middle">
+      <tr>
+        <th>#</th>
+        {% if veh_len > 1 %}
+        <th>Vehicle</th>
+        {% endif %}
+        <th>Date & Time</th>
+        <th>Odometer Reading</th>
+        <th>Fuel Volume Added</th>
+        <th>Unit Price</th>
+        <th>Total Price</th>
+        <th class="exclude-print">Modify</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for refuel in refuels %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        {% if veh_len > 1 %}
+        <td>{{ refuel["vehicle_name"] }}</td>
+        {% endif %}
+        <td>{{ refuel["date"] | dt}}</td>
+        <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
+        <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
+        <td>{{ refuel["price"] | cur(symbol) }}</td>
+        <td>{{ refuel["total_price"] | cur(symbol) }}</td>
+        <td class="exclude-print">
+          <a class="btn btn-outline-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
+            name="{{ refuel['id'] }}">
+            ✎
+          </a>
 
-            <!-- Button trigger modal -->
-            <button type="button" class="btn btn-outline-danger modify-button" data-bs-toggle="modal"
-              data-bs-target="#deleteModal{{ refuel['id'] }}">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="20" fill="currentColor" class="bi bi-trash"
-                viewBox="0 0 16 20">
-                <path
-                  d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-                <path fill-rule="evenodd"
-                  d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
-              </svg>
-            </button>
+          <!-- Button trigger modal -->
+          <button type="button" class="btn btn-outline-danger modify-button" data-bs-toggle="modal"
+            data-bs-target="#deleteModal{{ refuel['id'] }}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="20" fill="currentColor" class="bi bi-trash"
+              viewBox="0 0 16 20">
+              <path
+                d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+              <path fill-rule="evenodd"
+                d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+            </svg>
+          </button>
 
-            <!-- Modal -->
-            <div class="modal fade" id="deleteModal{{ refuel['id']}}" tabindex="-1" aria-labelledby="deleteModalLabel"
-              aria-hidden="true">
-              <!-- model-sm removed from the class below -->
-              <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h1 class="modal-title fs-4 text-dark" id="deleteModalLabel">
-                      Confirmation
-                    </h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                    <p class="text-dark fs-5">Are you sure?</p>
-                  </div>
-                  <div class="modal-footer">
-                    <!-- btn-sm removed from the class below -->
-                    <button type="button" class="btn btn-secondary w-auto px-4" data-bs-dismiss="modal">
-                      No
-                    </button>
-                    <form action="{{ url_for('deleteRefuel', id=refuel['id']) }}" method="post">
-                      <input class="btn btn-danger w-auto px-4" type="submit" value="Yes" />
-                    </form>
-                  </div>
+          <!-- Modal -->
+          <div class="modal fade" id="deleteModal{{ refuel['id']}}" tabindex="-1" aria-labelledby="deleteModalLabel"
+            aria-hidden="true">
+            <!-- model-sm removed from the class below -->
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h1 class="modal-title fs-4 text-dark" id="deleteModalLabel">
+                    Confirmation
+                  </h1>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <p class="text-dark fs-5">Are you sure?</p>
+                </div>
+                <div class="modal-footer">
+                  <!-- btn-sm removed from the class below -->
+                  <button type="button" class="btn btn-secondary w-auto px-4" data-bs-dismiss="modal">
+                    No
+                  </button>
+                  <form action="{{ url_for('deleteRefuel', id=refuel['id']) }}" method="post">
+                    <input class="btn btn-danger w-auto px-4" type="submit" value="Yes" />
+                  </form>
                 </div>
               </div>
             </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-  <!-- <a href="/delete-refuel" class="btn btn-outline-danger px-3 mt-3 w-sm-80">Delete Refuel</a> -->
+<!-- <a href="/delete-refuel" class="btn btn-outline-danger px-3 mt-3 w-sm-80">Delete Refuel</a> -->
 </section>
 
 <hr class="text-light mx-auto w-75 w-sm-80 mt-5" />
