@@ -53,13 +53,13 @@ input[type="time"] {
     input[type="text"],
     input[type="number"],
     input[type="password"] {
-        width: 80% !important;
+        width: 92% !important;
         background-color: #fbfbfb;
     }
 
     input[type="date"],
     input[type="time"] {
-        width: 40% !important;
+        width: 46% !important;
         background-color: #fbfbfb;
     }
 
@@ -68,7 +68,7 @@ input[type="time"] {
     }
 
     .w-sm-80 {
-        width: 80%;
+        width: 92%;
     }
 
     .w-sm-50 {
@@ -79,16 +79,6 @@ input[type="time"] {
         font-size: 14px;
     }
 
-    * {
-        padding-left: 2px !important;
-        padding-right: 2px !important;
-    }
-
-}
-
-.modal {
-    width: 100vw !important;
-    height: 100vh !important;
 }
 
 
