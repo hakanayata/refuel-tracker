@@ -40,16 +40,14 @@ db = SQL(uri)
 
 # ***** CONFIGURING ENDS HERE *****
 
-# todo: database vehicle_name should be removed from transactions table
 # todo: print should show table borders
+# todo: reset db indexes
 
 # ! add minlength and maxlength to password fields on html pages.
 # ! changing vehicle name doesn't affect old transactions
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
 # ? chart date filter
 # ? total distance traveled stat on vehicles page
-
-# * 1. all instances of select datetime('now','localtime') changed to select timestamp with time zone 'one'
 
 
 @app.after_request
@@ -97,9 +95,9 @@ def index():
     ref_len = len(refuels_db)
 
     # query for total distance traveled & total liters & total expenses
-    # ! instead of GROUP BY vehicle_id -> temporarily vehicle_name
+    # * FIXED: instead of GROUP BY vehicle_id -> temporarily vehicle_name
     statistics_db = db.execute(
-        "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_name", session["user_id"])
+        "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", session["user_id"])
 
     # stats' table should show when one vehicle has at least 2 transactions
     onShow = False
@@ -157,7 +155,8 @@ def index():
         selected_vehicle_db = db.execute(
             "SELECT * FROM vehicles WHERE user_id=? AND name = ?", session["user_id"], selected_vehicle)
         sel_vehicle_id = selected_vehicle_db[0]['id']
-        sel_vehicle_name = selected_vehicle_db[0]['name']
+        # * vehicle_name removed
+        # sel_vehicle_name = selected_vehicle_db[0]['name']
 
         # current total distance traveled that can be read on the odometer (int type)
         distance = request.form.get("distance")
@@ -190,9 +189,10 @@ def index():
         total_price = unit_price * volume
 
         # insert new entry into database
+        # * vehicle_name removed
         try:
-            db.execute("INSERT INTO refuels (date, distance, volume, price, total_price, user_id, vehicle_id, vehicle_name) VALUES(?,?,?,?,?,?,?,?)",
-                       date, distance, volume, unit_price, total_price, session["user_id"], sel_vehicle_id, sel_vehicle_name)
+            db.execute("INSERT INTO refuels (date, distance, volume, price, total_price, user_id, vehicle_id) VALUES(?,?,?,?,?,?,?)",
+                       date, distance, volume, unit_price, total_price, session["user_id"], sel_vehicle_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
@@ -208,9 +208,9 @@ def index():
             "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
 
         # query updated statistics
-        # ! instead of GROUP BY vehicle_id -> temporarily vehicle_name
+        # * FIXED instead of GROUP BY vehicle_id -> temporarily vehicle_name
         statistics_db_upd = db.execute(
-            "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM(total_price) AS expenses, vehicle_name FROM refuels WHERE user_id=? GROUP BY vehicle_name", session["user_id"])
+            "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", session["user_id"])
 
         onShow_upd = False
         for stat in statistics_db_upd:
@@ -496,8 +496,9 @@ def edit(id):
     """Edits an entry with a certain id"""
 
     # retrieve user's refuel row from database
+    # * vehicle_name removed
     refuel_db = db.execute(
-        "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
+        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? AND refuels.id=?", session["user_id"], id)
     # ensure refuel submitted was valid
     if not refuel_db:
         return errorMsg("Not found!")
@@ -508,7 +509,7 @@ def edit(id):
 
     # show old date as placeholder
     date = refuel_db[0]["date"]
-    print(f"OOOOOOOOOOOOO {date} OOOOOOOOOOOOO")
+    # print(f"OOOOOOOOOOOOO {date} OOOOOOOOOOOOO")
     # 2022-12-14T16:16:12.117Z
 
     # retrieve user's vehicles' names
@@ -579,9 +580,10 @@ def edit(id):
         total_price = volume * price
 
         # update database with edited refuel transaction
+        # * vehicle_name removed
         try:
-            db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=?, vehicle_name=? WHERE id=?",
-                       date, distance, volume, price, total_price, vehicle_id, vehicle_name, id)
+            db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=? WHERE id=?",
+                       date, distance, volume, price, total_price, vehicle_id, id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
@@ -652,8 +654,9 @@ def editVehicle(id):
         try:
             db.execute("UPDATE vehicles SET name=?, license_plate=? WHERE user_id=? AND id=?",
                        vehicle_name, license_plate, session["user_id"], id)
-            db.execute(
-                "UPDATE refuels SET vehicle_name=? WHERE vehicle_id=?", vehicle_name, id)
+            # * vehicle_name removed
+            # db.execute(
+            #     "UPDATE refuels SET vehicle_name=? WHERE vehicle_id=?", vehicle_name, id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
