@@ -6,7 +6,34 @@ Sign Up
 
 {% block main %}
 
-<form action="/signup" autocomplete="off" method="post" class="mt-3">
+<div class="text-info mx-auto text-center w-auto" id="error"></div>
+
+<form action="/signup" autocomplete="off" method="post" class="mt-3" id="form">
+
+    <div class="mb-4">
+        <input class="form-control mx-auto w-sm-92" name="username" type="text" placeholder="Username" id="username"
+            required>
+    </div>
+    <div class="mb-4">
+        <input class="form-control mx-auto w-sm-92" name="password" type="password" placeholder="Password" id="password"
+            required>
+    </div>
+    <div class="mb-4">
+        <input class="form-control mx-auto w-sm-92" name="confirmation" type="password" placeholder="Password (again)"
+            id="confirmation" required>
+    </div>
+    <div class="d-grid gap-2 d-md-block mx-auto w-auto">
+        <button class="btn btn-success mx-auto w-sm-92" type="submit" id="btn-signup">Sign Up</button>
+    </div>
+
+</form>
+
+<script src="../static/signup.js"></script>
+{% endblock %}
+
+
+
+<!-- <form action="/signup" autocomplete="off" method="post" class="mt-3" id="form">
 
     <div class="mb-4">
         <input class="form-control mx-auto w-sm-92" name="username" type="text" placeholder="Username">
@@ -25,5 +52,4 @@ Sign Up
         <button class="btn btn-success mx-auto w-sm-92" type="submit" id="btn-signup">Sign Up</button>
     </div>
 
-</form>
-{% endblock %}
+</form> -->
