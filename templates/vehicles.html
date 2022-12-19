@@ -4,6 +4,10 @@
 Vehicles
 {% endblock %}
 
+{% block head %}
+{{ super() }}
+{% endblock %}
+
 {% block main %}
 <form action="/vehicles" autocomplete="off" method="post" class="mt-2">
     <div class="my-3">
