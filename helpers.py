@@ -65,7 +65,8 @@ def vol(value, unit):
 def validate_password(password):
     """Validates password"""
 
-    special_chars = ['!', '@', '#', '$', '%', '&', '*', '+', '.']
+    special_chars = ['!', '@', '#', '$', '%',
+                     '&', '*', '_', '=', '+', '-', '.']
 
     # check for pass length
     if not len(password) >= 8 or not len(password) <= 20:
