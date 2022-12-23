@@ -9,22 +9,34 @@ Edit Refuel Transaction
 
 {% block main %}
 <form action="/edit/{{id}}" autocomplete="off" method="post">
-    <div>
-        <!-- 
+    <!-- <div> -->
+    <!-- 
         <input class="form-control my-2 mx-auto w-sm-92" type="datetime-local" min="2010-01-01T00:00:00"
             max="2038-01-01T00:00:00" name="date" value="{{ date[0:10] }}" step="any" required> -->
-        <!-- new input -->
-        <div class="mt-2 mb-3">
-            <div>
-                <label class="form-label text-light text-start" for="">Date & Time</label>
-            </div>
-            <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="date" min="2016-01-01"
-                max="2046-01-01" name="date" required step="any" id="edit-datepicker" value="{{ date[0:10] }}" />
-            <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
-                step="any" id="edit-timepicker" value="{{ date[11:16] }}" />
-            <input class="form-control mx-auto w-sm-92" type="text" name="datetime" id="edit-date" value="{{ date }}"
-                style="display: none;" />
+    <!-- new input -->
+    <div class="mt-2 mb-4">
+
+        {% if veh_len > 1 %}
+        <div class="mb-3">
+            <label class="form-label text-light text-start" for="vehicle">Vehicle</label>
+            <select class="form-select mx-auto w-sm-92" name="vehicle" id="vehicle">
+                <option selected value="{{ refuel['vehicle_name'] }}">{{ refuel['vehicle_name'] }}</option>
+                {% for vehicle in vehicles %}
+                <option value="{{ vehicle }}">{{ vehicle }}</option>
+                {% endfor %}
+            </select>
         </div>
+        {% endif %}
+
+        <div>
+            <label class="form-label text-light text-start" for="">Date & Time</label>
+        </div>
+        <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="date" min="2016-01-01"
+            max="2046-01-01" name="date" required step="any" id="edit-datepicker" value="{{ date[0:10] }}" />
+        <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
+            step="any" id="edit-timepicker" value="{{ date[11:16] }}" />
+        <input class="form-control mx-auto w-sm-92" type="text" name="datetime" id="edit-date" value="{{ date }}"
+            style="display: none;" />
 
         <div class="my-3">
             <label class="form-label text-light text-start" for="distance">Odometer reading</label>
@@ -42,17 +54,8 @@ Edit Refuel Transaction
                 value="{{refuel['price']}}" required id="price">
         </div>
 
-        <div class="my-3">
-            <label class="form-label text-light text-start" for="vehicle">Vehicle</label>
-            <select class="form-select mx-auto w-sm-92 mb-4" name="vehicle" id="vehicle">
-                <option selected value="{{ refuel['vehicle_name'] }}">{{ refuel['vehicle_name'] }}</option>
-                {% for vehicle in vehicles %}
-                <option value="{{ vehicle }}">{{ vehicle }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
     </div>
+    <!-- </div> -->
 
     <button class="btn btn-outline-warning w-sm-92 mx-auto my-4 px-5"> Edit Entry </button>
 

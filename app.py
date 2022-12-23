@@ -523,6 +523,9 @@ def edit(id):
     users_vehicles_db = db.execute(
         "SELECT name FROM vehicles WHERE user_id=?", session["user_id"])
 
+    # amount of vehicles owned by user
+    vehicle_len = len(users_vehicles_db)
+
     # create a list that excludes the vehicle from transaction that needs to be edited
     vehicles_list = []
     for vehicle in users_vehicles_db:
@@ -532,7 +535,8 @@ def edit(id):
             vehicles_list.append(vehicle['name'])
 
     if request.method == "GET":
-        return render_template("edit.html", refuel=refuel_db[0], date=date, id=id, vehicles=vehicles_list)
+        return render_template("edit.html", refuel=refuel_db[0], date=date, id=id, vehicles=vehicles_list, veh_len=vehicle_len)
+
     elif request.method == "POST":
 
         # date submitted by user
