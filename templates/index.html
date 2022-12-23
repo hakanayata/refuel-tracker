@@ -14,28 +14,40 @@
 <!-- <section> -->
 <form action="/" autocomplete="off" method="post">
   <div class="my-4">
-    <select class="form-select mx-auto w-sm-92 mb-4" name="vehicle">
-      <option selected value="{{ vehicles[0]['name'] }}">
-        {{ vehicles[0]['name'] }}
-      </option>
-      {% for vehicle in vehicles[1:] %}
-      <option value="{{ vehicle['name'] }}">{{ vehicle['name'] }}</option>
-      {% endfor %}
-    </select>
-    <input class="form-control my-2 mx-auto w-sm-40" style="display: inline-block;" type="date" min="2016-01-01"
-      max="2046-01-01" name="date" required step="any" id="index-datepicker" />
-    <input class="form-control my-2 mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
-      step="any" id="index-timepicker" />
+    <div class="my-3">
+      <label class="form-label text-light text-start" for="vehicle">Vehicle</label>
+      <select class="form-select mx-auto w-sm-92 mb-4" name="vehicle" id="vehicle">
+        <option selected value="{{ vehicles[0]['name'] }}">
+          {{ vehicles[0]['name'] }}
+        </option>
+        {% for vehicle in vehicles[1:] %}
+        <option value="{{ vehicle['name'] }}">{{ vehicle['name'] }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-    <input class="form-control my-2 mx-auto w-sm-92" type="text" name="datetime" id="index-date"
-      style="display: none;" />
+    <div class="my-3">
+      <div>
+        <label class="form-label text-light text-start">Date & Time</label>
+      </div>
+      <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="date" min="2016-01-01"
+        max="2046-01-01" name="date" required step="any" id="index-datepicker" />
+      <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
+        step="any" id="index-timepicker" />
+      <!-- for backend -->
+      <input class="form-control mx-auto w-sm-92" type="text" name="datetime" id="index-date" style="display: none;" />
+    </div>
 
-    <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" name="distance"
-      placeholder="Current odometer reading" required />
-    <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" step="any" name="volume"
-      placeholder="Fuel volume added" required />
-    <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" step="any" name="price"
-      placeholder="Unit price" required />
+    <div class="my-3">
+      <label class="form-label text-light text-start">Refuel Details</label>
+      <input class="form-control mx-auto mb-2 w-sm-92" type="number" min="0" name="distance"
+        placeholder="Current odometer reading" required />
+      <input class="form-control mx-auto mb-2 w-sm-92" type="number" min="0" step="any" name="volume"
+        placeholder="Fuel volume added" required />
+      <input class="form-control mx-auto w-sm-92" type="number" min="0" step="any" name="price" placeholder="Unit price"
+        required />
+    </div>
+
   </div>
 
   <button class="btn btn-success w-sm-92 mx-auto mt-3 px-4">
@@ -59,7 +71,7 @@
         {% if veh_len > 1 %}
         <th>Vehicle</th>
         {% endif %}
-        <th>Date & Time</th>
+        <th>Date</th>
         <th>Odometer Reading</th>
         <th>Fuel Volume Added</th>
         <th>Unit Price</th>
