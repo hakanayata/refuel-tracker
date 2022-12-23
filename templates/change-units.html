@@ -8,25 +8,49 @@ Change Units
 
 <form action="/change-units" method="post">
     <div class="mt-5 mb-2">
+        <label class="form-label text-light text-start" for="currency">Currency</label>
         <select class="form-select mx-auto w-sm-92" name="currency">
-            <option disabled selected>Select Currency - [{{ user_currency}}]</option>
-            {% for currency in currencies %}
-            <option value="{{ currency }}">{{ currency }}</option>
-            {% endfor %}
+            <!-- <option disabled selected>Select Currency - [{{ user_currency}}]</option> -->
+            <optgroup dir="ltr" label="Current setting">
+                <option selected value="{{ user_currency }}" id="currency">{{ user_currency}}</option>
+            </optgroup>
+            <optgroup dir="ltr" label="Other options">
+                {% for currency in currencies %}
+                <option value="{{ currency }}">{{ currency }}</option>
+                {% endfor %}
+            </optgroup>
         </select>
     </div>
     <div class="my-3">
-        <select class="form-select mx-auto w-sm-92" name="distance">
-            <option disabled selected>Select Distance Unit - [{{ user_distance_unit }}]</option>
-            <option value="km">kilometer</option>
-            <option value="mi">mile</option>
+        <label class="form-label text-light text-start" for="distance">Distance</label>
+        <select class="form-select mx-auto w-sm-92" name="distance" id="distance">
+            <!-- <option disabled selected>Select Distance Unit - [{{ user_distance_unit }}]</option> -->
+            <optgroup dir="ltr" label="Current setting">
+                <option selected value="{{ user_distance_unit }}">{{ user_distance_unit }}</option>
+            </optgroup>
+            <optgroup dir="ltr" label="Other options">
+                {% if user_distance_unit == 'km' %}
+                <option value="mi">mi</option>
+                {% else %}
+                <option value="km">km</option>
+                {% endif %}
+            </optgroup>
         </select>
     </div>
     <div class="my-3">
-        <select class="form-select mx-auto w-sm-92" name="volume">
-            <option disabled selected>Select Volume Unit - [{{ user_volume_unit }}]</option>
-            <option value="lt">liter</option>
-            <option value="gal">gallon</option>
+        <label class="form-label text-light text-start" for="volume">Volume</label>
+        <select class="form-select mx-auto w-sm-92" name="volume" id="volume">
+            <!-- <option disabled selected>Select Volume Unit - [{{ user_volume_unit }}]</option> -->
+            <optgroup dir="ltr" label="Current setting">
+                <option selected value="{{ user_volume_unit }}">{{ user_volume_unit }}</option>
+            </optgroup>
+            <optgroup dir="ltr" label="Other options">
+                {% if user_volume_unit == 'lt' %}
+                <option value="gal">gal</option>
+                {% else %}
+                <option value="lt">lt</option>
+                {% endif %}
+            </optgroup>
         </select>
     </div>
     <button class="btn btn-outline-warning mt-3 mb-5 w-sm-92" type="submit">Save Changes</button>
