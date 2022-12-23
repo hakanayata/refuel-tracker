@@ -35,6 +35,10 @@ input[type="time"] {
     background-color: #fbfbfb;
 }
 
+label {
+    width: 280px;
+}
+
 .btn {
     width: 280px;
 }
@@ -64,6 +68,10 @@ input[type="time"] {
     input[type="time"] {
         width: 46% !important;
         background-color: #fbfbfb;
+    }
+
+    label {
+        width: 92% !important;
     }
 
     .w-sm-100 {
