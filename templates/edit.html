@@ -14,30 +14,47 @@ Edit Refuel Transaction
         <input class="form-control my-2 mx-auto w-sm-92" type="datetime-local" min="2010-01-01T00:00:00"
             max="2038-01-01T00:00:00" name="date" value="{{ date[0:10] }}" step="any" required> -->
         <!-- new input -->
-        <input class="form-control my-2 mx-auto w-sm-40" style="display: inline-block;" type="date" min="2016-01-01"
-            max="2046-01-01" name="date" required step="any" id="edit-datepicker" value="{{ date[0:10] }}" />
-        <input class="form-control my-2 mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
-            step="any" id="edit-timepicker" value="{{ date[11:16] }}" />
-        <input class="form-control my-2 mx-auto w-sm-92" type="text" name="datetime" id="edit-date" value="{{ date }}"
-            style="display: none;" />
+        <div class="my-3">
+            <div>
+                <label class="form-label text-light text-start" for="">Date & Time</label>
+            </div>
+            <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="date" min="2016-01-01"
+                max="2046-01-01" name="date" required step="any" id="edit-datepicker" value="{{ date[0:10] }}" />
+            <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
+                step="any" id="edit-timepicker" value="{{ date[11:16] }}" />
+            <input class="form-control mx-auto w-sm-92" type="text" name="datetime" id="edit-date" value="{{ date }}"
+                style="display: none;" />
+        </div>
 
-        <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" name="distance"
-            placeholder="{{refuel['distance']}}" required>
-        <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" step="any" name="volume"
-            placeholder="{{refuel['volume']}}" required>
-        <input class="form-control my-2 mx-auto w-sm-92" type="number" min="0" step="any" name="price"
-            placeholder="{{refuel['price']}}" required>
+        <div class="my-3">
+            <label class="form-label text-light text-start" for="distance">Odometer reading</label>
+            <input class="form-control mx-auto w-sm-92" type="number" min="0" name="distance"
+                placeholder="{{refuel['distance']}}" required id="distance">
+        </div>
+        <div class="my-3">
+            <label class="form-label text-light text-start" for="volume">Volume added</label>
+            <input class="form-control mx-auto w-sm-92" type="number" min="0" step="any" name="volume"
+                placeholder="{{refuel['volume']}}" required id="volume">
+        </div>
+        <div class="my-3">
+            <label class="form-label text-light text-start" for="price">Unit price</label>
+            <input class="form-control mx-auto w-sm-92" type="number" min="0" step="any" name="price"
+                placeholder="{{refuel['price']}}" required id="price">
+        </div>
 
-        <select class="form-select mx-auto w-sm-92 mb-4" name="vehicle">
-            <option selected value="{{ refuel['vehicle_name'] }}">{{ refuel['vehicle_name'] }}</option>
-            {% for vehicle in vehicles %}
-            <option value="{{ vehicle }}">{{ vehicle }}</option>
-            {% endfor %}
-        </select>
+        <div class="my-3">
+            <label class="form-label text-light text-start" for="vehicle">Vehicle</label>
+            <select class="form-select mx-auto w-sm-92 mb-4" name="vehicle" id="vehicle">
+                <option selected value="{{ refuel['vehicle_name'] }}">{{ refuel['vehicle_name'] }}</option>
+                {% for vehicle in vehicles %}
+                <option value="{{ vehicle }}">{{ vehicle }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
     </div>
 
-    <button class="btn btn-outline-warning w-sm-92 mx-auto px-5"> Edit Entry </button>
+    <button class="btn btn-outline-warning w-sm-92 mx-auto my-3 px-5"> Edit Entry </button>
 
 </form>
 {% endblock %}
