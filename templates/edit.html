@@ -8,8 +8,8 @@ Edit Refuel Transaction
 {% endblock %}
 
 {% block main %}
-<form action="/edit/{{id}}" autocomplete="off" method="post">
-    <div class="my-4">
+<form action="/edit/{{id}}" autocomplete="off" method="post" class="mt-2">
+    <div>
         <!-- 
         <input class="form-control my-2 mx-auto w-sm-92" type="datetime-local" min="2010-01-01T00:00:00"
             max="2038-01-01T00:00:00" name="date" value="{{ date[0:10] }}" step="any" required> -->
@@ -54,7 +54,7 @@ Edit Refuel Transaction
 
     </div>
 
-    <button class="btn btn-outline-warning w-sm-92 mx-auto my-3 px-5"> Edit Entry </button>
+    <button class="btn btn-outline-warning w-sm-92 mx-auto my-4 px-5"> Edit Entry </button>
 
 </form>
 {% endblock %}
