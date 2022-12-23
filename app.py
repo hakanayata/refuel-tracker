@@ -42,6 +42,7 @@ db = SQL(uri)
 
 # todo: print should show table borders
 # todo: reset db indexes
+# todo: refuels table, change distance -> odometer
 
 # ! add minlength and maxlength to password fields on html pages.
 # ! changing vehicle name doesn't affect old transactions
@@ -64,8 +65,7 @@ def after_request(response):
 def index():
     """Show last entries, let user add/delete/edit new entry"""
     # retrieve username and unit settings
-    user_db = db.execute(
-        "SELECT * FROM users WHERE id=?", session["user_id"])
+    user_db = db.execute("SELECT * FROM users WHERE id=?", session["user_id"])
     username = user_db[0]["username"]
     currency_symbol = user_db[0]["currency"][-1]
     distance_unit = user_db[0]["distance_unit"]
@@ -259,9 +259,16 @@ def changeCur():
     user_distance_unit = user_units_db[0]["distance_unit"]
     user_volume_unit = user_units_db[0]["volume_unit"]
 
+    other_currencies = []
+    for currency in currencies:
+        if not currency == user_currency:
+            other_currencies.append(currency)
+        else:
+            continue
+
     # user reached route via GET
     if request.method == "GET":
-        return render_template("change-units.html", currencies=currencies, user_currency=user_currency, user_distance_unit=user_distance_unit, user_volume_unit=user_volume_unit)
+        return render_template("change-units.html", currencies=other_currencies, user_currency=user_currency, user_distance_unit=user_distance_unit, user_volume_unit=user_volume_unit)
 
     # user reached route via POST
     elif request.method == "POST":
@@ -296,7 +303,7 @@ def changeCur():
 
         # flash user with message
         flash(
-            f"Unit settings updated to '{selected_currency}' | '{selected_distance_unit}' '{selected_volume_unit}'")
+            f"Unit settings updated to '{selected_currency}' | '{selected_distance_unit}' | '{selected_volume_unit}'")
 
         # send user back to home page
         return redirect("/")
@@ -674,8 +681,7 @@ def history():
     """Shows the history of refuel transactions"""
 
     # query user's unit settings
-    user_db = db.execute(
-        "SELECT * FROM users WHERE id=?", session["user_id"])
+    user_db = db.execute("SELECT * FROM users WHERE id=?", session["user_id"])
     currency_symbol = user_db[0]["currency"][-1]
     distance_unit = user_db[0]["distance_unit"]
     volume_unit = user_db[0]["volume_unit"]
@@ -847,8 +853,7 @@ def vehicles():
     """Show all vehicles owned by user"""
 
     # query user's unit settings
-    user_db = db.execute(
-        "SELECT * FROM users WHERE id=?", session["user_id"])
+    user_db = db.execute("SELECT * FROM users WHERE id=?", session["user_id"])
     currency_symbol = user_db[0]["currency"][-1]
     distance_unit = user_db[0]["distance_unit"]
     volume_unit = user_db[0]["volume_unit"]
