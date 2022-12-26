@@ -40,12 +40,12 @@
 
     <div class="my-3">
       <label class="form-label text-light text-start">Refuel Details</label>
-      <input class="form-control mx-auto mb-2 w-sm-92" type="number" min="0" name="distance"
+      <input class="form-control mx-auto mb-2 w-sm-92" type="number" min="0" max="9999999" name="distance"
         placeholder="Current odometer reading" required />
-      <input class="form-control mx-auto mb-2 w-sm-92" type="number" min="0" step="any" name="volume"
+      <input class="form-control mx-auto mb-2 w-sm-92" type="number" min="0" max="9999" step="any" name="volume"
         placeholder="Fuel volume added" required />
-      <input class="form-control mx-auto w-sm-92" type="number" min="0" step="any" name="price" placeholder="Unit price"
-        required />
+      <input class="form-control mx-auto w-sm-92" type="number" min="0" max="9999999" step="any" name="price"
+        placeholder="Unit price" required />
     </div>
 
   </div>
@@ -86,7 +86,7 @@
         {% if veh_len > 1 %}
         <td>{{ refuel["vehicle_name"] }}</td>
         {% endif %}
-        <td>{{ refuel["date"] | dt}}</td>
+        <td>{{ refuel["date"] | dt }}</td>
         <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
         <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
         <td>{{ refuel["price"] | cur(symbol) }}</td>
