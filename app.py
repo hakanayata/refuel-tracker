@@ -700,7 +700,7 @@ def history():
 
     # query all transactions
     refuels_db = db.execute(
-        "SELECT * FROM refuels WHERE user_id=? ORDER BY date DESC", session["user_id"])
+        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC", session["user_id"])
 
     # length of transactions
     ref_len = len(refuels_db)
