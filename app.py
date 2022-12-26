@@ -40,6 +40,9 @@ db = SQL(uri)
 
 # ***** CONFIGURING ENDS HERE *****
 
+# todo: set char limit for names (vehicle, license plate, username)
+# todo: set limit for odometer, volume, unit price
+# todo: show local time on edit
 # todo: print should show table borders
 # todo: reset db indexes
 # todo: refuels table, change distance -> odometer
@@ -155,15 +158,15 @@ def index():
         selected_vehicle_db = db.execute(
             "SELECT * FROM vehicles WHERE user_id=? AND name = ?", session["user_id"], selected_vehicle)
         sel_vehicle_id = selected_vehicle_db[0]['id']
-        # * vehicle_name removed
+        # * vehicle_name removed from refuel table
         # sel_vehicle_name = selected_vehicle_db[0]['name']
 
         # current total distance traveled that can be read on the odometer (int type)
         distance = request.form.get("distance")
 
         # ensure distance exist, and it's bigger than zero, if so convert the value into integer
-        if not distance or not int(distance) > 0:
-            return errorMsg("invalid distance!")
+        if not distance or not int(distance) > 0 or not int(distance) < 10000000:
+            return errorMsg("Invalid odometer reading! Value must be between 0 and 10000000")
         else:
             distance = int(distance)
 
@@ -171,8 +174,8 @@ def index():
         volume = request.form.get("volume")
 
         # ensure volume exist, and it's bigger than zero, if so convert the value into float
-        if not volume or not float(volume):
-            return errorMsg("invalid liter")
+        if not volume or not float(volume) > 0 or not float(volume) < 10000:
+            return errorMsg("Invalid volume! Value must be between 0 and 10000")
         else:
             volume = float(request.form.get("volume"))
 
@@ -180,8 +183,8 @@ def index():
         unit_price = request.form.get("price")
 
         # ensure price exist, and it's greater than zero, if so convert the value into float
-        if not unit_price or not float(unit_price) > 0:
-            return errorMsg("invalid unit price")
+        if not unit_price or not float(unit_price) > 0 or not float(unit_price) < 10000000:
+            return errorMsg("Invalid unit price! Value must be between 0 and 10000000")
         else:
             unit_price = float(unit_price)
 
@@ -189,7 +192,7 @@ def index():
         total_price = unit_price * volume
 
         # insert new entry into database
-        # * vehicle_name removed
+        # * vehicle_name removed from refuel table
         try:
             db.execute("INSERT INTO refuels (date, distance, volume, price, total_price, user_id, vehicle_id) VALUES(?,?,?,?,?,?,?)",
                        date, distance, volume, unit_price, total_price, session["user_id"], sel_vehicle_id)
@@ -389,22 +392,25 @@ def changeUsername():
         return render_template("change-username.html")
 
     elif request.method == "POST":
-        username_db = db.execute(
-            "SELECT username FROM users WHERE id=?", session["user_id"])
-        old_name = username_db[0]["username"]
+        try:
+            username_db = db.execute(
+                "SELECT username FROM users WHERE id=?", session["user_id"])
+            old_name = username_db[0]["username"]
+        except:
+            return errorMsg("Ooops! An error has been occured during the retrieve of user information from database :(")
 
         old_username = request.form.get("old-username")
-        if not old_username:
-            return errorMsg("Must provide old username!")
+        if not old_username or not len(old_username) < 256:
+            return errorMsg("Invalid old username! Value must be between 0 and 256 characters.")
 
         new_username = request.form.get("username")
-        if not new_username:
-            return errorMsg("Must provide new username!")
+        if not new_username or not len(new_username) < 256:
+            return errorMsg("Invalid new username! Value must be between 0 and 256 characters.")
 
         # check for potential errors
         for char in new_username:
             if char == ' ':
-                return errorMsg("Space character(s) in username is not allowed!")
+                return errorMsg("Space character in username is not allowed!")
 
         confirmation = request.form.get("confirmation")
         if not confirmation:
@@ -503,7 +509,7 @@ def edit(id):
     """Edits an entry with a certain id"""
 
     # retrieve user's refuel row from database
-    # * vehicle_name removed
+    # * vehicle_name removed from refuel table
     refuel_db = db.execute(
         "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? AND refuels.id=?", session["user_id"], id)
     # ensure refuel submitted was valid
@@ -555,24 +561,24 @@ def edit(id):
 
         distance = request.form.get("distance")
         # distance validation
-        if not distance or not int(distance) > 0:
-            return errorMsg("Invalid kilometer!")
+        if not distance or not int(distance) > 0 or not int(distance) < 10000000:
+            return errorMsg("Invalid odometer reading! Value must be between 0 and 10000000.")
         else:
             distance = int(distance)
 
         volume = request.form.get("volume")
 
         # volume validation
-        if not volume or not float(volume) > 0:
-            return errorMsg("Invalid liter")
+        if not volume or not float(volume) > 0 or not float(volume) < 10000:
+            return errorMsg("Invalid volume! Value must be between 0 and 10000.")
         else:
             volume = float(volume)
 
         price = request.form.get("price")
 
         # unit price validation
-        if not price or not float(price) > 0:
-            return errorMsg("Invalid price!")
+        if not price or not float(price) > 0 or not float(price) < 10000000:
+            return errorMsg("Invalid unit price! Value must be between 0 and 10000000.")
         else:
             price = float(price)
 
@@ -591,7 +597,7 @@ def edit(id):
         total_price = volume * price
 
         # update database with edited refuel transaction
-        # * vehicle_name removed
+        # * vehicle_name removed from refuel table
         try:
             db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=? WHERE id=?",
                        date, distance, volume, price, total_price, vehicle_id, id)
@@ -665,7 +671,7 @@ def editVehicle(id):
         try:
             db.execute("UPDATE vehicles SET name=?, license_plate=? WHERE user_id=? AND id=?",
                        vehicle_name, license_plate, session["user_id"], id)
-            # * vehicle_name removed
+            # * vehicle_name removed from refuel table
             # db.execute(
             #     "UPDATE refuels SET vehicle_name=? WHERE vehicle_id=?", vehicle_name, id)
         except:
@@ -795,18 +801,18 @@ def signup():
         confirmation = request.form.get("confirmation")
 
         # check for potential errors
-        if not username:
-            return errorMsg("Please type a username")
+        if not username or not len(username) < 256:
+            return errorMsg("Invalid username! Value must be between 0 and 256 characters.")
         for char in username:
             if char == ' ':
-                return errorMsg("Space character(s) in username is not allowed!")
+                return errorMsg("Space character in username is not allowed!")
 
-        if not password:
-            return errorMsg("Please type a password")
+        if not password or not len(password) < 256:
+            return errorMsg("Invalid password! Value must be between 0 and 256 characters.")
         if not confirmation:
             return errorMsg("Please confirm your password")
         if not password == confirmation:
-            return errorMsg("Passwords do NOT match")
+            return errorMsg("Passwords do NOT match!")
 
         # if password doesn't meet requirements, return error
         # validate_password() function returns False if password invalid (check helpers.py for detail)
@@ -827,8 +833,8 @@ def signup():
         hash = generate_password_hash(password)
 
         # todo: add register date to table
-        register_date_db = db.execute("SELECT timestamp with time zone 'now'")
-        register_date = register_date_db[0]["timestamptz"]
+        register_date_db = db.execute("SELECT NOW()")
+        register_date = register_date_db[0]["now"]
 
         # INSERT INTO db new user's information
         try:
@@ -908,8 +914,8 @@ def vehicles():
             return errorMsg("Vehicle name can not end with space character(s)")
 
         # retrieve current local date & time
-        date_db = db.execute("SELECT TIMESTAMP WITH TIME ZONE 'NOW'")
-        date = date_db[0]["timestamptz"]
+        date_db = db.execute("SELECT NOW()")
+        date = date_db[0]["now"]
 
         # add new vehicle to the vehicles table
         try:
