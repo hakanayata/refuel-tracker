@@ -1,7 +1,20 @@
+
+
+
+
 window.onload = () => {
-    // variables to be showed
+    // variables to be showed (coming from DB)
     const datepicker_edit_page = document.getElementById("edit-datepicker")
     const timepicker_edit_page = document.getElementById("edit-timepicker")
+    // complete date in GMT(Greenwich Median Time) format
+    let dateCompleteGMT = new Date(`${datepicker_edit_page.value} ${timepicker_edit_page.value}:00+00:00`)
+    // timezone offset is -60 for germany (in winter)
+    let timezoneOffset = new Date().getTimezoneOffset()
+    // local time
+    let localDateTime = new Date(dateCompleteGMT - timezoneOffset)
+    // date to show
+    datepicker_edit_page.setAttribute('value', `${localDateTime.getFullYear()}-${localDateTime.getMonth() + 1}-${localDateTime.getDate()}`)
+    timepicker_edit_page.setAttribute('value', localDateTime.toLocaleTimeString().slice(0, 5))
 
     // variables to be sent to the DB
     const dateDB_edit_page = document.getElementById("edit-date")
