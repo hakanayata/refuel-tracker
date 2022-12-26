@@ -40,6 +40,7 @@ db = SQL(uri)
 
 # ***** CONFIGURING ENDS HERE *****
 
+# todo: retrieve username as value (not placeholder) on change-username.html page
 # todo: set char limit for names (vehicle, license plate, username)
 # todo: set limit for odometer, volume, unit price
 # todo: show local time on edit
@@ -92,7 +93,7 @@ def index():
 
     # retrieve last 3 entries from refuels table
     refuels_db = db.execute(
-        "SELECT * FROM refuels WHERE user_id=? ORDER BY date DESC LIMIT 3", session["user_id"])
+        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", session["user_id"])
 
     # length of refuels to show/hide tables (most recent entries & statistics table)
     ref_len = len(refuels_db)
@@ -136,23 +137,17 @@ def index():
     # user reached route via POST, as by submitting a form via POST
     elif request.method == "POST":
 
-        # date = request.form.get("date")
-        # if not date:
-        #     return errorMsg("Invalid date")
-
-        # time = request.form.get("time")
-        # if not time:
-        #     return errorMsg("Invalid time")
-
         try:
             date = request.form.get("datetime")
         except:
             return errorMsg("An error has been occured during the process of assigning a value to date!")
 
+        vehicle_names = [vehicle['name'] for vehicle in vehicles]
+
         selected_vehicle = request.form.get("vehicle")
         # validation
-        if not selected_vehicle:
-            return errorMsg("invalid vehicle!")
+        if not selected_vehicle or not selected_vehicle in vehicle_names:
+            return errorMsg("Invalid vehicle!")
 
         # ? if user has more than one car, list should also show vehicle_name field
         selected_vehicle_db = db.execute(
@@ -201,7 +196,7 @@ def index():
 
         # select updated database after a new entry
         refuels_upd_db = db.execute(
-            "SELECT * FROM refuels WHERE user_id=? ORDER BY date DESC LIMIT 3", session["user_id"])
+            "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", session["user_id"])
 
         # length of updated refuels rows
         ref_len_upd = len(refuels_upd_db)
@@ -306,7 +301,7 @@ def changeCur():
 
         # flash user with message
         flash(
-            f"Unit settings updated to '{selected_currency}' | '{selected_distance_unit}' | '{selected_volume_unit}'")
+            f"Unit settings has been updated to '{selected_currency}' | '{selected_distance_unit}' | '{selected_volume_unit}'")
 
         # send user back to home page
         return redirect("/")
@@ -375,7 +370,7 @@ def changePassword():
             return errorMsg("Ooops! An error has been occured :(")
 
         # flash with a message
-        flash("Password updated!")
+        flash("Password has been updated!")
 
         # send user back to homepage
         return redirect("/")
@@ -452,7 +447,7 @@ def deleteRefuel(id):
             "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
 
         if not refuel_delete_id:
-            return errorMsg("Not Found!")
+            return errorMsg("Transaction ID can not be found!")
 
         try:
             # * db.execute("DELETE") returns the number of rows deleted
@@ -522,7 +517,10 @@ def edit(id):
 
     # show old date as placeholder
     date = refuel_db[0]["date"]
+    # convert datetime.datetime object to string
+    date = str(date)
     # print(f"OOOOOOOOOOOOO {date} OOOOOOOOOOOOO")
+    # print(f"OOOOOOOOOOOOO {str(date)} OOOOOOOOOOOOO")
     # 2022-12-14T16:16:12.117Z
 
     # retrieve user's vehicles' names
@@ -554,11 +552,6 @@ def edit(id):
         except:
             return errorMsg("An error has been occured during the process of assigning a value to date!")
 
-        # date has to be converted into sql format!
-        # 2022-10-10T00:00:00 -> 2022-10-10 00:00:00
-        # else:
-        #     date = date.replace("T", " ")
-
         distance = request.form.get("distance")
         # distance validation
         if not distance or not int(distance) > 0 or not int(distance) < 10000000:
@@ -582,27 +575,36 @@ def edit(id):
         else:
             price = float(price)
 
-        vehicle_name = request.form.get("vehicle")
-        # vehicle name validation
-        if not vehicle_name:
-            return errorMsg("Must provide vehicle!")
-
-        # retrieve new vehicle's id from database
-        else:
-            vehicle_id_db = db.execute(
-                "SELECT id FROM vehicles WHERE user_id=? AND name=?", session["user_id"], vehicle_name)
-            vehicle_id = vehicle_id_db[0]["id"]
-
         # calculate total price
         total_price = volume * price
 
-        # update database with edited refuel transaction
-        # * vehicle_name removed from refuel table
-        try:
-            db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=? WHERE id=?",
-                       date, distance, volume, price, total_price, vehicle_id, id)
-        except:
-            return errorMsg("Ooops! An error has been occured :(")
+        if vehicle_len >= 2:
+            vehicle_name = request.form.get("vehicle")
+            # vehicle name validation
+            if not vehicle_name:
+                return errorMsg("Must provide vehicle!")
+
+            # retrieve new vehicle's id from database
+            else:
+                vehicle_id_db = db.execute(
+                    "SELECT id FROM vehicles WHERE user_id=? AND name=?", session["user_id"], vehicle_name)
+                vehicle_id = vehicle_id_db[0]["id"]
+            # update database with edited refuel transaction
+            # * vehicle_name removed from refuel table
+            try:
+                db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=? WHERE id=?",
+                           date, distance, volume, price, total_price, vehicle_id, id)
+            except:
+                return errorMsg("Ooops! An error has been occured :(")
+
+        else:
+            # update database with edited refuel transaction
+            # * vehicle_name removed from refuel table
+            try:
+                db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=? WHERE id=?",
+                           date, distance, volume, price, total_price, id)
+            except:
+                return errorMsg("Ooops! An error has been occured :(")
 
         flash("Entry has been updated succesfully!")
 
@@ -677,7 +679,7 @@ def editVehicle(id):
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
-        flash("Vehicle's information updated!")
+        flash("Vehicle's information has been updated!")
 
         return redirect("/")
 
