@@ -20,7 +20,7 @@ window.onload = () => {
     datepicker_edit_page.onchange = () => {
         dateDB = datepicker_edit_page.value
 
-        if (datepicker_edit_page.value != false) {
+        if (dateDB) {
             dateDB = dateDB.split("-")
             yearDB = Number(dateDB[0])
             monthDB = Number(dateDB[1]) - 1
