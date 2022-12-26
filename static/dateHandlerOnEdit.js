@@ -5,13 +5,11 @@ window.onload = () => {
     const timepicker_edit_page = document.getElementById("edit-timepicker")
     // complete date in GMT(Greenwich Median Time) format
     let dateCompleteGMT = new Date(`${datepicker_edit_page.value} ${timepicker_edit_page.value}:00+00:00`)
-    // timezone offset is -60 for germany (in winter)
-    // let timezoneOffset = new Date().getTimezoneOffset()
-    // local time
-    // let localDateTime = new Date(dateCompleteGMT - timezoneOffset)
+
     // date to show
-    datepicker_edit_page.setAttribute('value', `${dateCompleteGMT.getFullYear()}-${dateCompleteGMT.getMonth() + 1}-${dateCompleteGMT.getDate()}`)
-    timepicker_edit_page.setAttribute('value', `${dateCompleteGMT.getHours()}:${dateCompleteGMT.getMinutes()}`)
+    // datepicker_edit_page.setAttribute('value', `${dateCompleteGMT.getFullYear()}-${dateCompleteGMT.getMonth() + 1}-${dateCompleteGMT.getDate()}`)
+    datepicker_edit_page.setAttribute('value', `${('0' + String(dateCompleteGMT.getFullYear())).slice(-4)}-${('0' + (dateCompleteGMT.getMonth() + 1)).slice(-2)}-${('0' + String(dateCompleteGMT.getDate())).slice(-2)}`)
+    timepicker_edit_page.setAttribute('value', `${('0' + String(dateCompleteGMT.getHours())).slice(-2)}:${('0' + String(dateCompleteGMT.getMinutes())).slice(-2)}`)
 
     // variables to be sent to the DB
     const dateDB_edit_page = document.getElementById("edit-date")
@@ -21,15 +19,18 @@ window.onload = () => {
 
     datepicker_edit_page.onchange = () => {
         dateDB = datepicker_edit_page.value
-        console.log(`dateDB ${dateDB}`)
-        dateDB = dateDB.split("-")
-        yearDB = Number(dateDB[0])
-        monthDB = Number(dateDB[1]) - 1
-        dayDB = Number(dateDB[2])
-        d.setFullYear(yearDB)
-        d.setMonth(monthDB)
-        d.setDate(dayDB)
-        dateDB_edit_page.setAttribute('value', d.toISOString())
+
+        if (datepicker_edit_page.value != false) {
+            dateDB = dateDB.split("-")
+            yearDB = Number(dateDB[0])
+            monthDB = Number(dateDB[1]) - 1
+            dayDB = Number(dateDB[2])
+            d.setDate(dayDB)
+            d.setMonth(monthDB)
+            d.setFullYear(yearDB)
+            dateDB_edit_page.setAttribute('value', d.toISOString())
+        }
+
     }
 
     timepicker_edit_page.onchange = () => {
