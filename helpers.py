@@ -22,7 +22,9 @@ def cur(value, currency):
 
 def dt(value):
     """Format value as date."""
-    # 2022-12-14T16:16:12.117Z
+    # 2022-12-14T16:16:12.117Z   when db date type was TEXT
+    # 2022-12-14 16:16:12.117+00 when db date type is TIMESTAMP WITH TIME ZONE
+    value = str(value)
     year = int(value[0:4])
     month = int(value[5:7])
     day = int(value[8:10])
