@@ -1,7 +1,4 @@
 
-
-
-
 window.onload = () => {
     // variables to be showed (coming from DB)
     const datepicker_edit_page = document.getElementById("edit-datepicker")
@@ -9,12 +6,12 @@ window.onload = () => {
     // complete date in GMT(Greenwich Median Time) format
     let dateCompleteGMT = new Date(`${datepicker_edit_page.value} ${timepicker_edit_page.value}:00+00:00`)
     // timezone offset is -60 for germany (in winter)
-    let timezoneOffset = new Date().getTimezoneOffset()
+    // let timezoneOffset = new Date().getTimezoneOffset()
     // local time
-    let localDateTime = new Date(dateCompleteGMT - timezoneOffset)
+    // let localDateTime = new Date(dateCompleteGMT - timezoneOffset)
     // date to show
-    datepicker_edit_page.setAttribute('value', `${localDateTime.getFullYear()}-${localDateTime.getMonth() + 1}-${localDateTime.getDate()}`)
-    timepicker_edit_page.setAttribute('value', localDateTime.toLocaleTimeString().slice(0, 5))
+    datepicker_edit_page.setAttribute('value', `${dateCompleteGMT.getFullYear()}-${dateCompleteGMT.getMonth() + 1}-${dateCompleteGMT.getDate()}`)
+    timepicker_edit_page.setAttribute('value', `${dateCompleteGMT.getHours()}:${dateCompleteGMT.getMinutes()}`)
 
     // variables to be sent to the DB
     const dateDB_edit_page = document.getElementById("edit-date")
@@ -24,6 +21,7 @@ window.onload = () => {
 
     datepicker_edit_page.onchange = () => {
         dateDB = datepicker_edit_page.value
+        console.log(`dateDB ${dateDB}`)
         dateDB = dateDB.split("-")
         yearDB = Number(dateDB[0])
         monthDB = Number(dateDB[1]) - 1
