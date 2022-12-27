@@ -41,9 +41,9 @@ db = SQL(uri)
 # ***** CONFIGURING ENDS HERE *****
 
 # todo: retrieve username as value (not placeholder) on change-username.html page
-# todo: set char limit for names (vehicle, license plate, username)
-# todo: set limit for odometer, volume, unit price
-# todo: show local time on edit
+# X todo: set char limit for names (vehicle, license plate, username)
+# X todo: set limit for odometer, volume, unit price
+# X todo: show local time on edit
 # todo: print should show table borders
 # todo: reset db indexes
 # todo: refuels table, change distance -> odometer
@@ -383,16 +383,17 @@ def changePassword():
 @app.route("/change-username", methods=["GET", "POST"])
 @login_required
 def changeUsername():
+    try:
+        username_db = db.execute(
+            "SELECT username FROM users WHERE id=?", session["user_id"])
+        old_name = username_db[0]["username"]
+    except:
+        return errorMsg("Ooops! An error has been occured during the retrieve of user information from database :(")
+
     if request.method == "GET":
-        return render_template("change-username.html")
+        return render_template("change-username.html", old_username=old_name)
 
     elif request.method == "POST":
-        try:
-            username_db = db.execute(
-                "SELECT username FROM users WHERE id=?", session["user_id"])
-            old_name = username_db[0]["username"]
-        except:
-            return errorMsg("Ooops! An error has been occured during the retrieve of user information from database :(")
 
         old_username = request.form.get("old-username")
         if not old_username or not len(old_username) < 256:
@@ -414,7 +415,7 @@ def changeUsername():
         if not new_username == confirmation:
             return errorMsg("Please confirm you username")
 
-        # old username should match current password from db
+        # old username should match current username from db
         if not old_name == old_username:
             return errorMsg("Invalid username!")
 
