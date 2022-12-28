@@ -721,7 +721,7 @@ def history():
 
     # PostgreSQL version (shows last 12 months)
     chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '1 year')) GROUP BY mon", session["user_id"])
+        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) GROUP BY mon", session["user_id"])
 
     # SQLite version (shows current year only)
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
