@@ -86,7 +86,7 @@ History
 
 <div>
     <table class="align-middle caption-top mt-5 mx-auto table table-dark table-bordered table-sm w-75 w-sm-100"
-        id="table-to-print">
+        id="table-to-print" style="visibility: hidden">
         <caption>History of Refuel Transactions</caption>
         <thead class="align-middle">
             <tr>
@@ -116,7 +116,7 @@ History
                 <td>{{ refuel["price"] | cur(symbol) }}</td>
                 <td>{{ refuel["total_price"] | cur(symbol) }}</td>
                 <td class="exclude-print">
-                    <a class="btn btn-warning modify-button edit" href="{{ url_for('edit', id=refuel['id']) }}"
+                    <a class="btn btn-outline-warning modify-button edit" href="{{ url_for('edit', id=refuel['id']) }}"
                         name="{{ refuel['id'] }}">
                         <i class="fa-solid fa-pen"></i>
                     </a>
