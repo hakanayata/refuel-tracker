@@ -4,9 +4,9 @@
 {% block head %}
 {{ super() }}
 <!-- ? These script files should be moved to the bottom -->
-<script src="../static/script.js"></script>
 <script src="../static/dateLocalizer.js"></script>
 <script src="../static/dateHandler.js"></script>
+<script src="../static/script.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 {% endblock %}
 {% block main %}
@@ -61,7 +61,7 @@
 <hr class="text-light mx-auto w-75 w-sm-92 mt-5" />
 <!-- <hr class="mx-auto w-25"> -->
 {% if ref_len > 0 %}
-<div>
+<div id="table-show-onload" style="visibility: hidden;">
   <table
     class="align-middle caption-top my-4 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
     <caption>
@@ -94,7 +94,7 @@
         <td>{{ refuel["price"] | cur(symbol) }}</td>
         <td>{{ refuel["total_price"] | cur(symbol) }}</td>
         <td class="exclude-print">
-          <a class="btn btn-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
+          <a class="btn btn-outline-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
             name="{{ refuel['id'] }}">
             <i class="fa-solid fa-pen"></i>
           </a>

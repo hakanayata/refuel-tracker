@@ -1,5 +1,5 @@
-window.onload = () => {
-
+// window.onload = () => {
+window.addEventListener("DOMContentLoaded", () => {
     // variables to be showed
     const datepicker_index_page = document.getElementById("index-datepicker")
     const timepicker_index_page = document.getElementById("index-timepicker")
@@ -45,4 +45,5 @@ window.onload = () => {
         dateDB_index_page.setAttribute('value', d.toISOString())
     }
 
-}
+})
+
