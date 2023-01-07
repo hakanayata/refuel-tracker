@@ -40,12 +40,12 @@ db = SQL(uri)
 
 # ***** CONFIGURING ENDS HERE *****
 
-# todo: retrieve username as value (not placeholder) on change-username.html page
+# X todo: retrieve username as value (not placeholder) on change-username.html page
 # X todo: set char limit for names (vehicle, license plate, username)
 # X todo: set limit for odometer, volume, unit price
 # X todo: show local time on edit
 # todo: print should show table borders
-# todo: set default units to EUR and lt
+# X todo: set default units to EUR and lt
 # todo: refuels table, change distance -> odometer
 
 # ! add minlength and maxlength to password fields on html pages.
