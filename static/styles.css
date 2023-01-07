@@ -65,19 +65,19 @@ label {
     background-color: #2c3034;
 }
 
-#hr-title::before {
+.hr-title::before {
     margin-right: 1rem;
 }
 
-#hr-title::after {
+.hr-title::after {
     margin-left: 1rem;
 }
 
-#hr-title::before,
-#hr-title::after {
+.hr-title::before,
+.hr-title::after {
     content: '';
     display: inline-block;
-    width: calc((75% - 166px)/2);
+    width: calc((75% - 178px)/2);
     height: 1px;
     background: #6C757D;
     vertical-align: middle;
@@ -122,11 +122,11 @@ label {
         font-size: 14px;
     }
 
-    #hr-title::before,
-    #hr-title::after {
+    .hr-title::before,
+    .hr-title::after {
         content: '';
         display: inline-block;
-        width: calc((92% - 166px)/2);
+        width: calc((92% - 176px)/2);
         height: 1px;
         background: #6C757D;
         vertical-align: middle;

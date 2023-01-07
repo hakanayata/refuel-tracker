@@ -14,7 +14,7 @@
 {% if vehicles %}
 <!-- <section> -->
 <form action="/" autocomplete="off" method="post">
-  <span class="text-secondary" id="hr-title">Add New Transaction</span>
+  <span class="text-secondary hr-title">Add New Transaction</span>
   <div class="mb-4 mt-3">
     <div class="mb-3">
       <label class="form-label text-light text-start" for="vehicle">Vehicle</label>
@@ -58,18 +58,18 @@
 </form>
 
 
-<hr class="text-light mx-auto w-75 w-sm-92 mt-5" />
+<!-- <hr class="text-light mx-auto w-75 w-sm-92 mt-5" /> -->
 <!-- <hr class="mx-auto w-25"> -->
 {% if ref_len > 0 %}
-<div id="table-show-onload" style="visibility: hidden;">
-  <table
-    class="align-middle caption-top my-4 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
-    <caption>
+<div id="table-show-onload" class="mt-5" style="visibility: hidden;">
+  <table class="align-middle my-4 pt-4 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
+    <span class="text-secondary text-center hr-title">Most Recent Entries</span>
+    <!-- <caption class="text-secondary">
       Most recent entries
-    </caption>
+    </caption> -->
     <thead class="align-middle">
       <tr>
-        <th>#</th>
+        <!-- <th>#</th> -->
         {% if veh_len > 1 %}
         <th>Vehicle</th>
         {% endif %}
@@ -84,7 +84,7 @@
     <tbody>
       {% for refuel in refuels %}
       <tr>
-        <td>{{ loop.index }}</td>
+        <!-- <td>{{ loop.index }}</td> -->
         {% if veh_len > 1 %}
         <td>{{ refuel["vehicle_name"] }}</td>
         {% endif %}
@@ -144,8 +144,8 @@
 
 {% if show %}
 <table
-  class="align-middle caption-top my-2 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
-  <caption>
+  class="align-middle caption-top my-3 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
+  <caption class="text-secondary">
     Stats
   </caption>
   <thead class="align-middle">
