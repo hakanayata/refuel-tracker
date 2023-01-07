@@ -12,6 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 // save pdf on history page
-function downloadPDF() {
-    window.print();
-}
+// function downloadPDF() {
+//     window.print();
+// }

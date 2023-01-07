@@ -49,7 +49,17 @@ label {
     font-size: 0.9rem;
     margin: 3px;
     text-align: center;
+    border-radius: 50%;
 }
+
+/* .btn.modify-button.edit {
+    background-color: rgb(255, 225, 0);
+} */
+
+/* .btn.modify-button.delete {
+    background-color: red;
+    color: whitesmoke;
+} */
 
 #table-to-print>tbody>tr:nth-child(odd)>td:nth-child(n) {
     background-color: #2c3034;
@@ -72,6 +82,10 @@ label {
     background: #6C757D;
     vertical-align: middle;
 }
+
+/* input:focus:invalid {
+    border: 2px solid red;
+} */
 
 @media only screen and (max-width: 768px) {
 

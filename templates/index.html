@@ -3,9 +3,10 @@
 {% block title %} Home Page {% endblock %}
 {% block head %}
 {{ super() }}
-<!-- ? These script files moved to the bottom -->
+<!-- ? These script files should be moved to the bottom -->
+<script src="../static/script.js"></script>
+<script src="../static/dateLocalizer.js"></script>
 <script src="../static/dateHandler.js"></script>
-<script src="/static/script.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 {% endblock %}
 {% block main %}
@@ -72,7 +73,7 @@
         {% if veh_len > 1 %}
         <th>Vehicle</th>
         {% endif %}
-        <th>Date</th>
+        <th>Date | Time</th>
         <th>Odometer Reading</th>
         <th>Fuel Volume Added</th>
         <th>Unit Price</th>
@@ -87,19 +88,19 @@
         {% if veh_len > 1 %}
         <td>{{ refuel["vehicle_name"] }}</td>
         {% endif %}
-        <td>{{ refuel["date"] | dt }}</td>
+        <td class="dateNtime">{{ refuel["date"] }}</td>
         <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
         <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
         <td>{{ refuel["price"] | cur(symbol) }}</td>
         <td>{{ refuel["total_price"] | cur(symbol) }}</td>
         <td class="exclude-print">
-          <a class="btn btn-outline-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
+          <a class="btn btn-warning modify-button" href="{{ url_for('edit', id=refuel['id']) }}"
             name="{{ refuel['id'] }}">
             <i class="fa-solid fa-pen"></i>
           </a>
 
           <!-- Button trigger modal -->
-          <button type="button" class="btn btn-outline-danger modify-button" data-bs-toggle="modal"
+          <button type="button" class="btn btn-danger modify-button" data-bs-toggle="modal"
             data-bs-target="#deleteModal{{ refuel['id'] }}">
             <i class="fa-solid fa-trash-can"></i>
           </button>

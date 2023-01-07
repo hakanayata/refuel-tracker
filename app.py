@@ -9,7 +9,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import errorMsg, login_required, dt, cur, avr, validate_password, dist, vol
+from helpers import errorMsg, login_required, cur, avr, validate_password, dist, vol
 
 # Configure application
 app = Flask(__name__)
@@ -21,7 +21,7 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.jinja_env.filters["avr"] = avr
 app.jinja_env.filters["cur"] = cur
 app.jinja_env.filters["dist"] = dist
-app.jinja_env.filters["dt"] = dt
+# app.jinja_env.filters["dt"] = dt
 app.jinja_env.filters["vol"] = vol
 
 # Configure session to use filesystem (instead of signed cookies)
@@ -45,7 +45,7 @@ db = SQL(uri)
 # X todo: set limit for odometer, volume, unit price
 # X todo: show local time on edit
 # todo: print should show table borders
-# todo: reset db indexes
+# todo: set default units to EUR and lt
 # todo: refuels table, change distance -> odometer
 
 # ! add minlength and maxlength to password fields on html pages.
