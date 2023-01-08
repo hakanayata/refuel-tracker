@@ -96,22 +96,35 @@ def index():
     vehicles = db.execute(
         "SELECT * FROM vehicles WHERE user_id=?", user_id)
 
-    # length of distinct vehicles' array, in order to hide/show tables in case no vehicle exist
-    # if there's more than 1 vehicle, show one more column (vehicle name) on page
+    # length of distinct vehicles' array, this will help 2 things:
+    # in order to hide/show tables in case no vehicle exist
+    # if there's more than 1 vehicle, show one more column (vehicle name) on table
     vehicles_len = len(db.execute(
         "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
 
     # retrieve last 3 entries from refuels table
-    refuels_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", user_id)
+    latest_refuels = db.execute(
+        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, "
+        "refuels.price, refuels.total_price, refuels.user_id, "
+        "refuels.vehicle_id, vehicles.name AS vehicle_name "
+        "FROM refuels "
+        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        "WHERE refuels.user_id=? "
+        "ORDER BY refuels.date DESC LIMIT 3;", user_id)
 
     # length of refuels to show/hide tables (most recent entries & statistics table)
-    ref_len = len(refuels_db)
+    ref_len = len(latest_refuels)
 
     # query for total distance traveled & total liters & total expenses
     # * FIXED: instead of GROUP BY vehicle_id -> temporarily vehicle_name
     statistics_db = db.execute(
-        "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", user_id)
+        "SELECT (MAX(distance) - MIN(distance)) AS distance, "
+        "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+        "vehicles.name AS vehicle_name "
+        "FROM refuels "
+        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        "WHERE refuels.user_id=? "
+        "GROUP BY vehicles.id", user_id)
 
     # stats' table should show when one vehicle has at least 2 transactions
     onShow = False
@@ -127,7 +140,12 @@ def index():
     # query label (show day-month-year) and value (total fuel expense) to show on chart
     # ? PostgreSQL version
     chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", user_id)
+        "SELECT SUM(total_price) AS total_price, "
+        "date_trunc('month', date::timestamptz) AS mon "
+        "FROM refuels WHERE user_id=? "
+        "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+        "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+        "GROUP BY mon", user_id)
     # ? SQLite version
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", user_id)
 
@@ -141,7 +159,7 @@ def index():
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
     if request.method == "GET":
-        return render_template("index.html", vehicles=vehicles, refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username)
+        return render_template("index.html", vehicles=vehicles, refuels=latest_refuels, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username)
 
     # * POST carries request parameter in message body
     # user reached route via POST, as by submitting a form via POST
@@ -206,7 +224,13 @@ def index():
 
         # select updated database after a new entry
         refuels_upd_db = db.execute(
-            "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", user_id)
+            "SELECT refuels.id, refuels.date, refuels.distance, "
+            "refuels.volume, refuels.price, refuels.total_price, "
+            "refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "ORDER BY refuels.date DESC LIMIT 3;", user_id)
 
         # length of updated refuels rows
         ref_len_upd = len(refuels_upd_db)
@@ -218,7 +242,13 @@ def index():
         # query updated statistics
         # * FIXED instead of GROUP BY vehicle_id -> temporarily vehicle_name
         statistics_db_upd = db.execute(
-            "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", user_id)
+            "SELECT (MAX(distance) - MIN(distance)) AS distance, "
+            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "GROUP BY vehicles.id", user_id)
 
         onShow_upd = False
         for stat in statistics_db_upd:
@@ -228,7 +258,12 @@ def index():
 
         # retrieve updated refuels to show on chart
         chart_db_upd = db.execute(
-            "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", user_id)
+            "SELECT SUM(total_price) AS total_price, "
+            "date_trunc('month', date::timestamptz) AS mon "
+            "FROM refuels "
+            "WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+            "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+            "GROUP BY mon", user_id)
 
         # updated chart's labes & values
         labels_upd = [
@@ -523,7 +558,12 @@ def edit(id):
     # retrieve user's refuel row from database
     # * vehicle_name removed from refuel table
     refuel_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? AND refuels.id=?", user_id, id)
+        "SELECT refuels.id, refuels.date, refuels.distance, "
+        "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
+        "refuels.vehicle_id, vehicles.name AS vehicle_name "
+        "FROM refuels "
+        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        "WHERE refuels.user_id=? AND refuels.id=?", user_id, id)
     # ensure refuel submitted was valid
     if not refuel_db:
         return errorMsg("Not found!")
@@ -726,7 +766,13 @@ def history():
 
     # query all transactions
     refuels_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC", user_id)
+        "SELECT refuels.id, refuels.date, refuels.distance, "
+        "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
+        "refuels.vehicle_id, vehicles.name AS vehicle_name "
+        "FROM refuels "
+        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        "WHERE refuels.user_id=? "
+        "ORDER BY refuels.date DESC", user_id)
 
     # length of transactions
     ref_len = len(refuels_db)
@@ -746,7 +792,13 @@ def history():
 
     # PostgreSQL version (shows last 12 months)
     chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) GROUP BY mon", user_id)
+        "SELECT SUM(total_price) AS total_price, "
+        "date_trunc('month', date::timestamptz) AS mon "
+        "FROM refuels "
+        "WHERE user_id=? "
+        "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+        "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) "
+        "GROUP BY mon", user_id)
 
     # SQLite version (shows current year only)
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
@@ -905,7 +957,13 @@ def vehicles():
 
     # retrieve total volume of refuels, total cost of refuels from vehicles table
     vehicles_db = db.execute(
-        "SELECT vehicles.id, vehicles.name, vehicles.license_plate, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", user_id)
+        "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
+        "SUM(volume) AS liters, SUM(total_price) AS expenses "
+        "FROM vehicles "
+        "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
+        "WHERE vehicles.user_id=? "
+        "GROUP BY vehicles.id "
+        "ORDER BY vehicles.id", user_id)
     # vehicles_db = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
 
     # length of vehicles list
@@ -961,7 +1019,13 @@ def vehicles():
 
         # select updated version of data
         vehicles_db_uptd = db.execute(
-            "SELECT vehicles.id, vehicles.name, vehicles.license_plate, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", user_id)
+            "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
+            "SUM(volume) AS liters, SUM(total_price) AS expenses "
+            "FROM vehicles "
+            "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
+            "WHERE vehicles.user_id=? "
+            "GROUP BY vehicles.id "
+            "ORDER BY vehicles.id", user_id)
         # vehicles_db_uptd = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
 
         # length of updated list
