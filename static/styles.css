@@ -73,11 +73,52 @@ label {
     margin-left: 1rem;
 }
 
-.hr-title::before,
-.hr-title::after {
+.hr-title.new-transaction::before,
+.hr-title.new-transaction::after {
     content: '';
     display: inline-block;
-    width: calc((75% - 178px)/2);
+    width: calc((75% - 186.53px)/2);
+    height: 1px;
+    background: #6C757D;
+    vertical-align: middle;
+}
+
+
+.hr-title.recent-entries::before,
+.hr-title.recent-entries::after {
+    content: '';
+    display: inline-block;
+    width: calc((75% - 177.45px)/2);
+    height: 1px;
+    background: #6C757D;
+    vertical-align: middle;
+}
+
+.hr-title.stats::before,
+.hr-title.stats::after {
+    content: '';
+    display: inline-block;
+    width: calc((75% - 69.3px)/2);
+    height: 1px;
+    background: #6C757D;
+    vertical-align: middle;
+}
+
+.hr-title.chart::before,
+.hr-title.chart::after {
+    content: '';
+    display: inline-block;
+    width: calc((75% - 72.2px)/2);
+    height: 1px;
+    background: #6C757D;
+    vertical-align: middle;
+}
+
+.hr-title.history::before,
+.hr-title.history::after {
+    content: '';
+    display: inline-block;
+    width: calc((75% - 160.8px)/2);
     height: 1px;
     background: #6C757D;
     vertical-align: middle;
@@ -122,21 +163,35 @@ label {
         font-size: 14px;
     }
 
-    .hr-title::before,
-    .hr-title::after {
-        content: '';
-        display: inline-block;
-        width: calc((92% - 176px)/2);
-        height: 1px;
-        background: #6C757D;
-        vertical-align: middle;
+    .hr-title.new-transaction::before,
+    .hr-title.new-transaction::after {
+    width: calc((92% - 186.53px)/2);
+    }
+
+
+    .hr-title.recent-entries::before,
+    .hr-title.recent-entries::after {
+        width: calc((92% - 177.45px)/2);
+    }
+
+    .hr-title.stats::before,
+    .hr-title.stats::after {
+        width: calc((92% - 69.3px)/2);
+    }
+
+    .hr-title.chart::before,
+    .hr-title.chart::after {
+        width: calc((92% - 72.2px)/2);
+    }
+
+    .hr-title.history::before,
+    .hr-title.history::after {
+        width: calc((92% - 160.8px)/2);
     }
 
     .table {
         font-family: 'Roboto Condensed', sans-serif;
     }
-
-
 
 }
 
@@ -162,7 +217,7 @@ label {
     }
 
     #table-to-print>tbody>tr:nth-child(odd)>td:nth-child(n) {
-        border: 30px solid #2c3034 !important;
+        border: 1px solid #2c3034 !important;
     }
 
     #table-to-print>caption {

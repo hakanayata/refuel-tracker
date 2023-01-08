@@ -694,7 +694,12 @@ def history():
     """Shows the history of refuel transactions"""
 
     # query user's unit settings
-    user_db = db.execute("SELECT * FROM users WHERE id=?", session["user_id"])
+    try:
+        user_db = db.execute(
+            "SELECT * FROM users WHERE id=?", session["user_id"])
+    except RuntimeError:
+        return errorMsg("Could not receieve data from server. Please refresh the page.")
+
     currency_symbol = user_db[0]["currency"][-1]
     distance_unit = user_db[0]["distance_unit"]
     volume_unit = user_db[0]["volume_unit"]

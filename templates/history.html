@@ -14,15 +14,17 @@ History
 
 {% if ref_len > 0 %}
 
+<span class="d-block text-secondary text-center mb-4 hr-title chart">Chart</span>
+
 <div class="container">
     <div class="row">
         <div class="mx-auto w-50 w-sm-100">
-            <div class="card">
+            <div class="card border-secondary">
                 <div class="card-header bg-dark text-center">
                     <p style="color: #40e1b0">MONTHLY TOTAL FUEL EXPENSES - LAST 12 MONTHS</p>
                 </div>
-                <div style="background-color: lightgray;" class="card-body">
-                    <canvas style="background-color: white" id="myChart"></canvas>
+                <div class="bg-dark card-body">
+                    <canvas height="240" class="canvas-history" style="background-color: #252932" id="myChart"></canvas>
                 </div>
                 <div class="card-footer bg-dark text-info text-end">Expense per month ({{ symbol }})</div>
             </div>
@@ -39,55 +41,43 @@ History
             labels: {{ labels | safe }},
     datasets: [{
         axis: 'y',
-        label: 'Monthly Total Fuel Expense',
-        // data: [12, 19, 3, 5, 2, 3],
+        label: 'Fuel Expenses',
         data: {{ values | safe }},
         backgroundColor: [
-        'rgba(255, 99, 132, 0.2)',
-        'rgba(54, 162, 235, 0.2)',
-        'rgba(255, 206, 86, 0.2)',
-        'rgba(75, 192, 192, 0.2)',
-        'rgba(153, 102, 255, 0.2)',
-        'rgba(255, 159, 64, 0.2)',
-        'rgba(255, 99, 132, 0.2)',
-        'rgba(54, 162, 235, 0.2)',
-        'rgba(255, 206, 86, 0.2)',
-        'rgba(75, 192, 192, 0.2)',
-        'rgba(153, 102, 255, 0.2)',
-        'rgba(255, 159, 64, 0.2)'
+        'rgba(23, 140, 120, .7)',
     ],
         borderColor: [
-        'rgba(255, 99, 132, 1)',
-        'rgba(54, 162, 235, 1)',
-        'rgba(255, 206, 86, 1)',
-        'rgba(75, 192, 192, 1)',
-        'rgba(153, 102, 255, 1)',
-        'rgba(255, 159, 64, 1)',
-        'rgba(255, 99, 132, 1)',
-        'rgba(54, 162, 235, 1)',
-        'rgba(255, 206, 86, 1)',
-        'rgba(75, 192, 192, 1)',
-        'rgba(153, 102, 255, 1)',
-        'rgba(255, 159, 64, 1)'
+        'rgba(64, 225, 176, 1)',
     ],
-        borderWidth: 1
+        borderWidth: 1,
+        barThickness: 10,
             }]
         },
     options: {
         scales: {
             y: {
-                beginAtZero: true
+                beginAtZero: true,
+                    ticks: {
+                    color: '#ddd',
+                }
+            },
+            x: {
+                ticks: {
+                    color: '#ddd',
+                }
             }
         },
         indexAxis: 'y',
+            color: '#aaa',
     }
     });
 </script>
 
 <div>
-    <table class="align-middle caption-top mt-5 mx-auto table table-dark table-bordered table-sm w-75 w-sm-100"
+    <table class="align-middle caption-top mb-5 mx-auto table table-dark table-bordered table-sm w-75 w-sm-100"
         id="table-to-print" style="visibility: hidden">
-        <caption class="text-secondary">History of Refuel Transactions</caption>
+        <span class="d-block text-secondary text-center mt-5 mb-4 hr-title history">History of Refuels</span>
+        <!-- <caption class="text-secondary">History of Refuel Transactions</caption> -->
         <thead class="align-middle">
             <tr>
                 <th>#</th>

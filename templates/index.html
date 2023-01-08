@@ -14,7 +14,7 @@
 {% if vehicles %}
 <!-- <section> -->
 <form action="/" autocomplete="off" method="post">
-  <span class="text-secondary hr-title">Add New Transaction</span>
+  <span class="text-secondary hr-title new-transaction">Add New Transaction</span>
   <div class="mb-4 mt-3">
     <div class="mb-3">
       <label class="form-label text-light text-start" for="vehicle">Vehicle</label>
@@ -61,9 +61,9 @@
 <!-- <hr class="text-light mx-auto w-75 w-sm-92 mt-5" /> -->
 <!-- <hr class="mx-auto w-25"> -->
 {% if ref_len > 0 %}
-<div id="table-show-onload" class="mt-5" style="visibility: hidden;">
-  <table class="align-middle my-4 pt-4 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
-    <span class="text-secondary text-center hr-title">Most Recent Entries</span>
+<div id="table-show-onload" class="my-5" style="visibility: hidden;">
+  <table class="align-middle my-5 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
+    <span class="text-secondary text-center hr-title recent-entries">Most Recent Entries</span>
     <!-- <caption class="text-secondary">
       Most recent entries
     </caption> -->
@@ -140,14 +140,15 @@
   </table>
 </div>
 
-<hr class="text-light mx-auto w-75 w-sm-92 mt-5" />
+<!-- <hr class="text-light mx-auto w-75 w-sm-92 mt-5" /> -->
 
 {% if show %}
 <table
-  class="align-middle caption-top my-3 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
-  <caption class="text-secondary">
+  class="align-middle caption-top my-5 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
+  <span class="text-secondary text-center hr-title stats">Stats</span>
+  <!-- <caption class="text-secondary">
     Stats
-  </caption>
+  </caption> -->
   <thead class="align-middle">
     <tr>
       <!-- {% if show %} -->
@@ -172,24 +173,25 @@
   </tbody>
 </table>
 
-<hr class="text-light mx-auto w-75 w-sm-92 my-5" />
+<!-- <hr class="text-light mx-auto w-75 w-sm-92 my-5" /> -->
 {% endif %}
 
 <!-- <div class="my-4 mx-auto bg-light w-50">
     <canvas id="myChart" height="100"></canvas>
 </div> -->
+<span class="text-secondary text-center hr-title chart">Chart</span>
 
 <div class="container mt-5">
   <div class="row">
     <div class="mx-auto w-75 w-sm-100">
-      <div class="card">
+      <div class="card border-secondary">
         <div class="card-header bg-dark text-center">
           <p style="color: #40e1b0">
             MONTHLY TOTAL FUEL EXPENSES - LAST 3 MONTHS
           </p>
         </div>
-        <div class="bg-secondary card-body">
-          <canvas height="160" style="background-color: #f0f0f0" id="myChart"></canvas>
+        <div class="bg-dark card-body">
+          <canvas height="160" style="background-color: #252932" id="myChart"></canvas>
         </div>
         <div class="card-footer bg-dark text-info text-end">
           Total Expense ({{ symbol }})
@@ -207,47 +209,34 @@
       labels: {{ labels | safe }},
   datasets: [{
     axis: 'y',
-    label: 'Monthly Total Fuel Expenses',
-    // data: [12, 19, 3, 5, 2, 3],
+    label: 'Fuel Expenses',
     data: {{ values | safe }},
     backgroundColor: [
-    'rgba(255, 99, 132, 0.4)',
-    'rgba(54, 162, 235, 0.4)',
-    'rgba(255, 206, 86, 0.4)',
-    'rgba(75, 192, 192, 0.4)',
-    'rgba(153, 102, 255, 0.4)',
-    'rgba(255, 159, 64, 0.4)',
-    'rgba(255, 99, 132, 0.4)',
-    'rgba(54, 162, 235, 0.4)',
-    'rgba(255, 206, 86, 0.4)',
-    'rgba(75, 192, 192, 0.4)',
-    'rgba(153, 102, 255, 0.4)',
-    'rgba(255, 159, 64, 0.4)'
+    'rgba(23, 140, 120, .7)',
   ],
     borderColor: [
-    'rgba(255, 99, 132, 1)',
-    'rgba(54, 162, 235, 1)',
-    'rgba(255, 206, 86, 1)',
-    'rgba(75, 192, 192, 1)',
-    'rgba(153, 102, 255, 1)',
-    'rgba(255, 159, 64, 1)',
-    'rgba(255, 99, 132, 1)',
-    'rgba(54, 162, 235, 1)',
-    'rgba(255, 206, 86, 1)',
-    'rgba(75, 192, 192, 1)',
-    'rgba(153, 102, 255, 1)',
-    'rgba(255, 159, 64, 1)'
+    'rgba(64, 225, 176, 1)',
   ],
-    borderWidth: 1
-          }]
+    borderWidth: 1,
+        }]
       },
   options: {
     scales: {
       y: {
-        beginAtZero: true
+        beginAtZero: true,
+          ticks: {
+          color: '#ddd',
+        }
+      },
+      x: {
+        ticks: {
+          color: '#ddd',
+        }
       }
     },
     indexAxis: 'y',
+      color: '#aaa',
+        animation: false,
   }
   });
 </script>
