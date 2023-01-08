@@ -134,8 +134,8 @@ def index():
             break
 
     # abbreviations for chart
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    # months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    #           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     # query label (show day-month-year) and value (total fuel expense) to show on chart
     # ? PostgreSQL version
@@ -149,11 +149,12 @@ def index():
     # ? SQLite version
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", user_id)
 
-    # print(f"#######$$$$$$%%%% {chart_db} ######$$$$$$$$%%%%%%")
-    # print(f"#######$$$$$$%%%% {chart_db[0]['mon']} ######$$$$$$$$%%%%%%")
-    # print(f"#######$$$$$$%%%% {chart_db[0]['mon'].strftime('%Y-%m-%d')} ######$$$$$$$$%%%%%%")
-    labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
-              for x in chart_db]
+    # print(f"###$$$$%%% {chart_db[0]['mon'].strftime('%Y-%m-%d')} ###$$$%%%")
+    # print(f"###$$$$%%% {chart_db[0]['mon'].strftime('%m-%Y')} ###$$$$%%")
+    # labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
+    #           for x in chart_db]
+
+    labels = [x["mon"].strftime('%m-%Y') for x in chart_db]
     values = [x["total_price"] for x in chart_db]
 
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
@@ -266,8 +267,9 @@ def index():
             "GROUP BY mon", user_id)
 
         # updated chart's labes & values
-        labels_upd = [
-            months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1] for x in chart_db_upd]
+        # labels_upd = [
+        #     months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1] for x in chart_db_upd]
+        labels_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
         values_upd = [x["total_price"] for x in chart_db_upd]
 
         return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, show=onShow_upd, username=username)
@@ -804,8 +806,9 @@ def history():
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
 
     # pick month part from the string to show as label of the chart
-    labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
-              for x in chart_db]
+    # labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
+    #           for x in chart_db]
+    labels = [x["mon"].strftime('%m-%Y') for x in chart_db]
 
     # total expense for that specific month
     values = [x["total_price"] for x in chart_db]
