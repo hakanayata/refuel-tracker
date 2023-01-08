@@ -78,10 +78,12 @@ def index():
     except:
         return errorMsg("Couldn't retrieve data from server. Please refresh the page.")
 
-    username = user_db[0]["username"]
-    currency_symbol = user_db[0]["currency"][-1]
-    distance_unit = user_db[0]["distance_unit"]
-    volume_unit = user_db[0]["volume_unit"]
+    user = user_db[0]
+
+    username = user["username"]
+    currency_symbol = user["currency"][-1]
+    distance_unit = user["distance_unit"]
+    volume_unit = user["volume_unit"]
 
     # set default value of date input to now
     # returns "2022-12-11 22:47:56"
@@ -118,7 +120,7 @@ def index():
             onShow = True
             break
 
-    # abbrevations for chart
+    # abbreviations for chart
     months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -716,9 +718,11 @@ def history():
     except RuntimeError:
         return errorMsg("Could not receieve data from server. Please refresh the page.")
 
-    currency_symbol = user_db[0]["currency"][-1]
-    distance_unit = user_db[0]["distance_unit"]
-    volume_unit = user_db[0]["volume_unit"]
+    user = user_db[0]
+
+    currency_symbol = user["currency"][-1]
+    distance_unit = user["distance_unit"]
+    volume_unit = user["volume_unit"]
 
     # query all transactions
     refuels_db = db.execute(
@@ -888,10 +892,16 @@ def vehicles():
     user_id = session["user_id"]
 
     # query user's unit settings
-    user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
-    currency_symbol = user_db[0]["currency"][-1]
-    distance_unit = user_db[0]["distance_unit"]
-    volume_unit = user_db[0]["volume_unit"]
+    try:
+        user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    user = user_db[0]
+
+    currency_symbol = user["currency"][-1]
+    distance_unit = user["distance_unit"]
+    volume_unit = user["volume_unit"]
 
     # retrieve total volume of refuels, total cost of refuels from vehicles table
     vehicles_db = db.execute(
