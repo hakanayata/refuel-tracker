@@ -68,8 +68,16 @@ def after_request(response):
 @login_required
 def index():
     """Show last entries, let user add/delete/edit new entry"""
+
+    user_id = session["user_id"]
+
     # retrieve username and unit settings
-    user_db = db.execute("SELECT * FROM users WHERE id=?", session["user_id"])
+    try:
+        user_db = db.execute(
+            "SELECT * FROM users WHERE id=?", user_id)
+    except:
+        return errorMsg("Couldn't retrieve data from server. Please refresh the page.")
+
     username = user_db[0]["username"]
     currency_symbol = user_db[0]["currency"][-1]
     distance_unit = user_db[0]["distance_unit"]
@@ -84,16 +92,16 @@ def index():
 
     # select vehicles to show in dropdown menu
     vehicles = db.execute(
-        "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
+        "SELECT * FROM vehicles WHERE user_id=?", user_id)
 
-    # length of distinct vehicles's array, in order to hide/show tables in case no vehicle exist
+    # length of distinct vehicles' array, in order to hide/show tables in case no vehicle exist
     # if there's more than 1 vehicle, show one more column (vehicle name) on page
     vehicles_len = len(db.execute(
-        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
+        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
 
     # retrieve last 3 entries from refuels table
     refuels_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", session["user_id"])
+        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", user_id)
 
     # length of refuels to show/hide tables (most recent entries & statistics table)
     ref_len = len(refuels_db)
@@ -101,7 +109,7 @@ def index():
     # query for total distance traveled & total liters & total expenses
     # * FIXED: instead of GROUP BY vehicle_id -> temporarily vehicle_name
     statistics_db = db.execute(
-        "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", session["user_id"])
+        "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", user_id)
 
     # stats' table should show when one vehicle has at least 2 transactions
     onShow = False
@@ -117,9 +125,9 @@ def index():
     # query label (show day-month-year) and value (total fuel expense) to show on chart
     # ? PostgreSQL version
     chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", session["user_id"])
+        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", user_id)
     # ? SQLite version
-    # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
+    # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", user_id)
 
     # print(f"#######$$$$$$%%%% {chart_db} ######$$$$$$$$%%%%%%")
     # print(f"#######$$$$$$%%%% {chart_db[0]['mon']} ######$$$$$$$$%%%%%%")
@@ -151,7 +159,7 @@ def index():
 
         # ? if user has more than one car, list should also show vehicle_name field
         selected_vehicle_db = db.execute(
-            "SELECT * FROM vehicles WHERE user_id=? AND name = ?", session["user_id"], selected_vehicle)
+            "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
         sel_vehicle_id = selected_vehicle_db[0]['id']
         # * vehicle_name removed from refuel table
         # sel_vehicle_name = selected_vehicle_db[0]['name']
@@ -190,25 +198,25 @@ def index():
         # * vehicle_name removed from refuel table
         try:
             db.execute("INSERT INTO refuels (date, distance, volume, price, total_price, user_id, vehicle_id) VALUES(?,?,?,?,?,?,?)",
-                       date, distance, volume, unit_price, total_price, session["user_id"], sel_vehicle_id)
+                       date, distance, volume, unit_price, total_price, user_id, sel_vehicle_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
         # select updated database after a new entry
         refuels_upd_db = db.execute(
-            "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", session["user_id"])
+            "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", user_id)
 
         # length of updated refuels rows
         ref_len_upd = len(refuels_upd_db)
 
         # length of updated vehicles rows
         vehicles_len = len(db.execute(
-            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
+            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
 
         # query updated statistics
         # * FIXED instead of GROUP BY vehicle_id -> temporarily vehicle_name
         statistics_db_upd = db.execute(
-            "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", session["user_id"])
+            "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", user_id)
 
         onShow_upd = False
         for stat in statistics_db_upd:
@@ -218,7 +226,7 @@ def index():
 
         # retrieve updated refuels to show on chart
         chart_db_upd = db.execute(
-            "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", session["user_id"])
+            "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", user_id)
 
         # updated chart's labes & values
         labels_upd = [
@@ -243,6 +251,7 @@ def account():
 @ login_required
 def changeCur():
     """Show currency settings"""
+    user_id = session["user_id"]
 
     # available currency list
     currencies = ['USD - $', 'EUR - €', 'GBP - £',
@@ -251,7 +260,7 @@ def changeCur():
 
     # user's unit settings
     user_units_db = db.execute(
-        "SELECT currency, distance_unit, volume_unit FROM users WHERE id=?", session["user_id"])
+        "SELECT currency, distance_unit, volume_unit FROM users WHERE id=?", user_id)
 
     user_currency = user_units_db[0]["currency"]
     user_distance_unit = user_units_db[0]["distance_unit"]
@@ -295,7 +304,7 @@ def changeCur():
         # update new setting in database
         try:
             db.execute("UPDATE users SET currency=?, distance_unit=?, volume_unit=? WHERE id=?",
-                       selected_currency, selected_distance_unit, selected_volume_unit, session["user_id"])
+                       selected_currency, selected_distance_unit, selected_volume_unit, user_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
@@ -314,6 +323,7 @@ def changeCur():
 @login_required
 def changePassword():
     """Show password settings"""
+    user_id = session["user_id"]
 
     # user reached via GET
     if request.method == "GET":
@@ -324,7 +334,7 @@ def changePassword():
 
         # query existing hashed password
         password_db = db.execute(
-            "SELECT hash FROM users WHERE id=?", session["user_id"])
+            "SELECT hash FROM users WHERE id=?", user_id)
         old_hash = password_db[0]["hash"]
 
         # old password submitted by user
@@ -365,7 +375,7 @@ def changePassword():
         # update users password in database
         try:
             db.execute("UPDATE users SET hash=? WHERE id=?",
-                       new_hash, session["user_id"])
+                       new_hash, user_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
@@ -383,9 +393,11 @@ def changePassword():
 @app.route("/change-username", methods=["GET", "POST"])
 @login_required
 def changeUsername():
+    """Changes username"""
+    user_id = session["user_id"]
     try:
         username_db = db.execute(
-            "SELECT username FROM users WHERE id=?", session["user_id"])
+            "SELECT username FROM users WHERE id=?", user_id)
         old_name = username_db[0]["username"]
     except:
         return errorMsg("Ooops! An error has been occured during the retrieve of user information from database :(")
@@ -427,7 +439,7 @@ def changeUsername():
 
         try:
             db.execute("UPDATE users SET username=? WHERE id=?",
-                       new_username, session["user_id"])
+                       new_username, user_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
@@ -443,6 +455,7 @@ def changeUsername():
 @login_required
 def deleteRefuel(id):
     """Deletes refuel after confirmation"""
+
     if request.method == "POST":
         refuel_delete_id = db.execute(
             "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
@@ -471,7 +484,7 @@ def deleteVehicle(id):
     if request.method == "POST":
 
         vehicle_delete_db = db.execute(
-            "SELECT * FROM vehicles WHERE user_id=? AND id=?", session['user_id'], id)
+            "SELECT * FROM vehicles WHERE user_id=? AND id=?", session["user_id"], id)
 
         if not vehicle_delete_db:
             return errorMsg("Not found!")
@@ -503,11 +516,12 @@ def deleteVehicle(id):
 @login_required
 def edit(id):
     """Edits an entry with a certain id"""
+    user_id = session["user_id"]
 
     # retrieve user's refuel row from database
     # * vehicle_name removed from refuel table
     refuel_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? AND refuels.id=?", session["user_id"], id)
+        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? AND refuels.id=?", user_id, id)
     # ensure refuel submitted was valid
     if not refuel_db:
         return errorMsg("Not found!")
@@ -526,7 +540,7 @@ def edit(id):
 
     # retrieve user's vehicles' names
     users_vehicles_db = db.execute(
-        "SELECT name FROM vehicles WHERE user_id=?", session["user_id"])
+        "SELECT name FROM vehicles WHERE user_id=?", user_id)
 
     # amount of vehicles owned by user
     vehicle_len = len(users_vehicles_db)
@@ -588,7 +602,7 @@ def edit(id):
             # retrieve new vehicle's id from database
             else:
                 vehicle_id_db = db.execute(
-                    "SELECT id FROM vehicles WHERE user_id=? AND name=?", session["user_id"], vehicle_name)
+                    "SELECT id FROM vehicles WHERE user_id=? AND name=?", user_id, vehicle_name)
                 vehicle_id = vehicle_id_db[0]["id"]
             # update database with edited refuel transaction
             # * vehicle_name removed from refuel table
@@ -619,9 +633,10 @@ def edit(id):
 @login_required
 def editVehicle(id):
     """Edits vehicle name or plate number"""
+    user_id = session["user_id"]
     # query for vehicle to be edited
     vehicle_db = db.execute(
-        "SELECT name, license_plate FROM vehicles WHERE user_id=? AND id=?", session["user_id"], id)
+        "SELECT name, license_plate FROM vehicles WHERE user_id=? AND id=?", user_id, id)
 
     # user musn't reach ids that aren't his/her, by changing the URL manually
     if not vehicle_db:
@@ -632,7 +647,7 @@ def editVehicle(id):
 
     # every vehicle from user, used in name check below
     user_vehicles_db = db.execute(
-        "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
+        "SELECT * FROM vehicles WHERE user_id=?", user_id)
 
     if request.method == "GET":
         return render_template("edit-vehicle.html", vehicle=vehicle_db, id=id)
@@ -673,7 +688,7 @@ def editVehicle(id):
         # update database
         try:
             db.execute("UPDATE vehicles SET name=?, license_plate=? WHERE user_id=? AND id=?",
-                       vehicle_name, license_plate, session["user_id"], id)
+                       vehicle_name, license_plate, user_id, id)
             # * vehicle_name removed from refuel table
             # db.execute(
             #     "UPDATE refuels SET vehicle_name=? WHERE vehicle_id=?", vehicle_name, id)
@@ -692,11 +707,12 @@ def editVehicle(id):
 @login_required
 def history():
     """Shows the history of refuel transactions"""
+    user_id = session["user_id"]
 
     # query user's unit settings
     try:
         user_db = db.execute(
-            "SELECT * FROM users WHERE id=?", session["user_id"])
+            "SELECT * FROM users WHERE id=?", user_id)
     except RuntimeError:
         return errorMsg("Could not receieve data from server. Please refresh the page.")
 
@@ -706,14 +722,14 @@ def history():
 
     # query all transactions
     refuels_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC", session["user_id"])
+        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC", user_id)
 
     # length of transactions
     ref_len = len(refuels_db)
 
     # retrieve grand total of total price column
     sum_expense_db = db.execute(
-        "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", session["user_id"])
+        "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", user_id)
 
     # grand total
     sum_expense = sum_expense_db[0]["grand_total"]
@@ -726,7 +742,7 @@ def history():
 
     # PostgreSQL version (shows last 12 months)
     chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) GROUP BY mon", session["user_id"])
+        "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) GROUP BY mon", user_id)
 
     # SQLite version (shows current year only)
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
@@ -740,7 +756,7 @@ def history():
 
     # length of refuel transactions
     vehicles_len = len(db.execute(
-        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
+        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
 
     if request.method == "GET":
         return render_template("history.html", refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, total_expenses=sum_expense)
@@ -840,7 +856,7 @@ def signup():
         # hash password
         hash = generate_password_hash(password)
 
-        # todo: add register date to table
+        # add register date to table
         register_date_db = db.execute("SELECT NOW()")
         register_date = register_date_db[0]["now"]
 
@@ -869,16 +885,17 @@ def signup():
 @login_required
 def vehicles():
     """Show all vehicles owned by user"""
+    user_id = session["user_id"]
 
     # query user's unit settings
-    user_db = db.execute("SELECT * FROM users WHERE id=?", session["user_id"])
+    user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
     currency_symbol = user_db[0]["currency"][-1]
     distance_unit = user_db[0]["distance_unit"]
     volume_unit = user_db[0]["volume_unit"]
 
     # retrieve total volume of refuels, total cost of refuels from vehicles table
     vehicles_db = db.execute(
-        "SELECT vehicles.id, vehicles.name, vehicles.license_plate, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session['user_id'])
+        "SELECT vehicles.id, vehicles.name, vehicles.license_plate, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", user_id)
     # vehicles_db = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
 
     # length of vehicles list
@@ -928,13 +945,13 @@ def vehicles():
         # add new vehicle to the vehicles table
         try:
             db.execute("INSERT INTO vehicles (name, license_plate, date, user_id) VALUES(?, ?, ?, ?)",
-                       vehicle_name, license_plate, date, session["user_id"])
+                       vehicle_name, license_plate, date, user_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
         # select updated version of data
         vehicles_db_uptd = db.execute(
-            "SELECT vehicles.id, vehicles.name, vehicles.license_plate, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session['user_id'])
+            "SELECT vehicles.id, vehicles.name, vehicles.license_plate, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", user_id)
         # vehicles_db_uptd = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
 
         # length of updated list
