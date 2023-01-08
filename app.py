@@ -64,13 +64,38 @@ def after_request(response):
     return response
 
 
+### NOT: Asagidaki tamamen benim yorumum. Eger Flask yazan herkes bunu boyle yaziyorsa, yapacak bir sey yok ama sunu da
+### demeden edemeyecegim: fucking hell mayt.
+###
+### "index" diye bir function var ve bu function hem GET hem POST islemi yapiyor. Bu hosuma 3 nedenden dolayi gitmedi
+### 1. index sayfasinda ne gosteriliyor diye bu functioni okumak zorundayim. index sayfasinda form submit edilince
+### bu functioni okumak zorundayim. Eger index sayfasinda ne gosteriliyor diye bu sayfayi okuyorsam, satir 141-235 arasini
+### okumamam gerekiyor. Eger form submit edilince neler yapiliyor diye merak ediyorsam da, satir 137-138 beni ilgilendirmiyor
+### Bu baya bir mantiksiz
+### 2. GET ve POST requestlerinin ihtiyaci olan butun degiskenler yukarda tanimlaniyor. Mesela satir 78 deki username, POST
+### request geldiginde de olusturuluyor, ama satir 144 teki elif calistigi icin, hic kullanilmiyor. Bos yere olusmus bir
+### degisken olmus oluyor. Yani aslinda, GET ve POST bambaska isler yapiyorlar, ortak logicleri nerdeyse hic yok, fakat
+### ayni function icindeler.
+### 3. Gereksiz if, elif, else kullanimina sebep oluyor.
+### Onerim: iki ayri function olmasi. GET icin getIndexPage functioni olsun. POST icin addRefuel functioni olsun. Istersen
+### daha guzel isimler de kullanabilirsin. Bu arada, index ismi hic yardimci olmuyor. index functioninin POST requestte
+### ne yaptigini anlamak icin, db kelimesini arattim ve INSERT kelimesini gozlerim aradi. Sonra anladim ki refuel tablosuna
+### insertion yapiyor, o zaman anladim index functioninin aslinda ne is yaptigini. Yani ismi bana bunu soylemedi
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
     """Show last entries, let user add/delete/edit new entry"""
     # retrieve username and unit settings
     user_db = db.execute("SELECT * FROM users WHERE id=?", session["user_id"])
+    ### user_db[0]["username"] diyoruz. Ya user_db[0] yoksa? O zaman burasi exception firlatir. Burda bunun kontrolu gerekiyor
+    ### user_db[0] tekrarlayan bir operation. Onun yerine user = user_db[0] denmesi ve artik user kullanilmasi daha hos olur
     username = user_db[0]["username"]
+    ### neden -1? -1'de ne var? Bu kodu ilk okuyan kisi, currency nin bir array oldugunu, ve arrayin son elemanini almaya
+    ### calistigini falan dusunuyor. Halbuki senin istedigin sey bir string parsing. O yuzden, yeni bir function yaz, mesela
+    ### helpers.py ye yazabilirsin. def getCurrencySymbolFromCurrency(currency) return currency[-1] seklinde. Ve bu functioni
+    ### her yerde kullan. Kimse de index veya bir baska yerde neden -1 yaziyoruz diye dusunmesin. Ayrica, yarin bir gun
+    ### currency nin seklini semalini degistirdin diyelim ki, o zaman projenin her yerinde -1 i replace etmeye ugrasmak yerine
+    ### sadece bu functioni duzeltmen yeterli gelecek
     currency_symbol = user_db[0]["currency"][-1]
     distance_unit = user_db[0]["distance_unit"]
     volume_unit = user_db[0]["volume_unit"]
@@ -86,51 +111,92 @@ def index():
     vehicles = db.execute(
         "SELECT * FROM vehicles WHERE user_id=?", session["user_id"])
 
-    # length of distinct vehicles's array, in order to hide/show tables in case no vehicle exist
+    # length of distinct vehicles array, in order to hide/show tables in case no vehicle exist
     # if there's more than 1 vehicle, show one more column (vehicle name) on page
+    ### yukardaki yorum ile, "if there is more than 1..." asagidaki kod arasinda bir baglanti yok. Yorum sadece kafa
+    ### karistiriyor
     vehicles_len = len(db.execute(
         "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", session["user_id"]))
 
     # retrieve last 3 entries from refuels table
+    ### yan binaya uzayip giden bir sql query. Asagiya dogru uzasin, yana dogru degil
+    ### refuels_db = db.execute(
+    ###                "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume," +
+    ###                " refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id" +
+    ###                " vehicles.name AS vehicle_name" +
+    ###                " FROM refuels" +
+    ###                " JOIN vehicles ON refuels.vehicle_id = vehicles.id" +
+    ###                " WHERE refuels.user_id=?" +
+    ###                " ORDER BY refuels.date DESC" +
+    ###                " LIMIT 3;", session["user_id"])
+    ### ayrica her yerde session["user_id"] yazmayalim. Onun yerine user_id = session["user_id"] diyip artik user_id
+    ### degiskenini kullanalim
+    ### ayrica refuels_db eksik bir isimlendirme. latest_refuels daha dogru bir isim olurdu
     refuels_db = db.execute(
         "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, refuels.price, refuels.total_price, refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? ORDER BY refuels.date DESC LIMIT 3;", session["user_id"])
 
     # length of refuels to show/hide tables (most recent entries & statistics table)
+    ### ref_len e gerek yok. Direkt html de {% if ref_len > 0 %} yerine {% if len(refuels_db) > 0 %} yazabilirsin
     ref_len = len(refuels_db)
 
     # query for total distance traveled & total liters & total expenses
     # * FIXED: instead of GROUP BY vehicle_id -> temporarily vehicle_name
+    ### yan binaya uzayip giden bir sql query. Asagiya dogru uzasin, yana dogru degil
+    ### user_id kullanilsin
     statistics_db = db.execute(
         "SELECT (MAX(distance) - MIN(distance)) AS distance, SUM(volume) AS liters, SUM (total_price) AS expenses, vehicles.name AS vehicle_name FROM refuels JOIN vehicles ON refuels.vehicle_id = vehicles.id WHERE refuels.user_id=? GROUP BY vehicles.id", session["user_id"])
 
     # stats' table should show when one vehicle has at least 2 transactions
+    ### burada onShow demissin, htmlde show. Isimleri neden farkli?
+    ### show da onShow da eksik. Neyi show? showStats diyebilirdin
+    ### bu for loop a da, degiskene de gerek yok. HTML'de yazdigin {% if show %} yerine
+    ### {% if  len([stat for stat in stats if stat["distance"]] > 0]) %} diye tek satirda yazabilirdin
+    ### Bunu okumak daha kolay. Cunku gosterip gostermeye karar veren ve gosterilen sey alt alta duracak
+    ### Burada ise pythonda bir kod var, HTML i okumadan anlam kazanmiyor. Kodu okumak anlamak zorlasiyor
     onShow = False
     for stat in statistics_db:
         if stat["distance"] > 0:
             onShow = True
             break
 
-    # abbrevations for chart
+    # abbreviations for chart
     months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     # query label (show day-month-year) and value (total fuel expense) to show on chart
     # ? PostgreSQL version
+    ### yan binaya uzanan SQL statement ve user_id
     chart_db = db.execute(
         "SELECT SUM(total_price) AS total_price, date_trunc('month', date::timestamptz) AS mon FROM refuels WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) GROUP BY mon", session["user_id"])
+    ### Bunu yorumda tutup kirlilik gormek yerine, bir function yaz. getRefuelChart(db_dialect, user_id) diye. Hem Postgre hem de
+    ### SQLite kodunu oraya tasi, burada da cagirirken getRefuelChart("postgres", user_id) diye cagir. Daha temiz
+    ### gorunecek. Hatta bir sonraki adim, kullandigin db dialect i env den okursan veya bir degiskende tutarsan (cunku
+    ### baska lazim oldugu yerler de var) getRefuelChart(user_id) seklinde bile cagirabilirsin
     # ? SQLite version
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", session["user_id"])
 
     # print(f"#######$$$$$$%%%% {chart_db} ######$$$$$$$$%%%%%%")
     # print(f"#######$$$$$$%%%% {chart_db[0]['mon']} ######$$$$$$$$%%%%%%")
     # print(f"#######$$$$$$%%%% {chart_db[0]['mon'].strftime('%Y-%m-%d')} ######$$$$$$$$%%%%%%")
+    ### bunun sonucu olarak hep ingilizce mi goruyoruz label lari? Why? Kullanici kendi dilinde neden goremiyor?
     labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
               for x in chart_db]
+    ### labels ve values isimlerini begenmedim. Cok genericler. Ya daha guzel isimler verelim, ya da direkt bu kodu HTML
+    ### e tasiyalim. Boylelikle hem reder_template 80 milyon parametre gondermez, kod kisalir, hem de logici muhatap oldugu
+    ### yere tasiriz, okumak kolaylasir. Iki secenek de OK. Su anki problem, values u okuyorum, kodu anliyorum, ama kafamda
+    ### koca bir soru isareti, Why do we do this? Cevabi alacagim html kodunu okurken de values neydi lan diyip buraya
+    ### geri donecegim. Bu kod bana kendini en az 2 kere okutacak
     values = [x["total_price"] for x in chart_db]
 
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
     if request.method == "GET":
+        ### bu satir yan binaya dogru uzanmasin. Soyle yazabilirsin
+        ### return render_template("index.html",
+        ###                        vehicles=vehicles,
+        ###                        refuels=refuels_db
+        ### vb gibi. Burada anlatmislar
+        ### https://stackoverflow.com/questions/4172448/is-it-possible-to-break-a-long-line-to-multiple-lines-in-python
         return render_template("index.html", vehicles=vehicles, refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username)
 
     # * POST carries request parameter in message body
