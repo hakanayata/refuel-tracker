@@ -163,6 +163,3 @@ cython_debug/
 *.db
 run.sh
 
-# Flask sessions
-flask_session
-
