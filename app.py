@@ -44,12 +44,11 @@ db = SQL(uri)
 # X todo: set char limit for names (vehicle, license plate, username)
 # X todo: set limit for odometer, volume, unit price
 # X todo: show local time on edit
-# todo: print should show table borders
+# X todo: print should show table borders
 # X todo: set default units to EUR and lt
 # todo: refuels table, change distance -> odometer
 
 # ! add minlength and maxlength to password fields on html pages.
-# ! changing vehicle name doesn't affect old transactions
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
 # ? chart date filter
 # ? total distance traveled stat on vehicles page
@@ -64,7 +63,7 @@ def after_request(response):
     return response
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 @login_required
 def index():
     """Show last entries, let user add/delete/edit new entry"""
@@ -84,13 +83,6 @@ def index():
     currency_symbol = user["currency"][-1]
     distance_unit = user["distance_unit"]
     volume_unit = user["volume_unit"]
-
-    # set default value of date input to now
-    # returns "2022-12-11 22:47:56"
-    # date_db = db.execute("SELECT CURRENT_TIMESTAMP(0)")
-    # print(f"########{date_db[0]}")
-    # print(f"########{date_db[0]['current_timestamp']}")
-    # date_now = date_db[0]["current_timestamp"]
 
     # select vehicles to show in dropdown menu
     vehicles = db.execute(
@@ -150,7 +142,6 @@ def index():
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", user_id)
 
     # print(f"###$$$$%%% {chart_db[0]['mon'].strftime('%Y-%m-%d')} ###$$$%%%")
-    # print(f"###$$$$%%% {chart_db[0]['mon'].strftime('%m-%Y')} ###$$$$%%")
     # labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
     #           for x in chart_db]
 
@@ -159,124 +150,136 @@ def index():
 
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
-    if request.method == "GET":
-        return render_template("index.html", vehicles=vehicles, refuels=latest_refuels, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username)
+    # if request.method == "GET":
+    return render_template("index.html", vehicles=vehicles, refuels=latest_refuels, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username)
 
-    # * POST carries request parameter in message body
-    # user reached route via POST, as by submitting a form via POST
-    elif request.method == "POST":
 
-        try:
-            date = request.form.get("datetime")
-        except:
-            return errorMsg("An error has been occured during the process of assigning a value to date!")
+# * POST carries request parameter in message body
+# user reached route via POST, as by submitting a form via POST
+@app.route("/",  methods=["POST"])
+@login_required
+def add_refuel():
+    """Let user add/delete refuels via POST requests"""
+    user_id = session["user_id"]
 
-        vehicle_names = [vehicle['name'] for vehicle in vehicles]
+    try:
+        date = request.form.get("datetime")
+        user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
+    except:
+        return errorMsg("An error has been occured during the process of assigning a value to date!")
 
-        selected_vehicle = request.form.get("vehicle")
-        # validation
-        if not selected_vehicle or not selected_vehicle in vehicle_names:
-            return errorMsg("Invalid vehicle!")
+    user = user_db[0]
+    # ? no need to send username to html
+    # username = user["username"]
+    currency_symbol = user["currency"][-1]
+    distance_unit = user["distance_unit"]
+    volume_unit = user["volume_unit"]
 
-        # ? if user has more than one car, list should also show vehicle_name field
-        selected_vehicle_db = db.execute(
-            "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
-        sel_vehicle_id = selected_vehicle_db[0]['id']
-        # * vehicle_name removed from refuel table
-        # sel_vehicle_name = selected_vehicle_db[0]['name']
+    # select vehicles to show in dropdown menu
+    vehicles = db.execute("SELECT * FROM vehicles WHERE user_id=?", user_id)
 
-        # current total distance traveled that can be read on the odometer (int type)
-        distance = request.form.get("distance")
+    vehicle_names = [vehicle['name'] for vehicle in vehicles]
 
-        # ensure distance exist, and it's bigger than zero, if so convert the value into integer
-        if not distance or not int(distance) > 0 or not int(distance) < 10000000:
-            return errorMsg("Invalid odometer reading! Value must be between 0 and 10000000")
-        else:
-            distance = int(distance)
+    selected_vehicle = request.form.get("vehicle")
+    # validation
+    if not selected_vehicle or not selected_vehicle in vehicle_names:
+        return errorMsg("Invalid vehicle!")
 
-        # volume of refuel (float type)
-        volume = request.form.get("volume")
+    # ? if user has more than one car, list should also show vehicle_name field
+    selected_vehicle_db = db.execute(
+        "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
+    sel_vehicle_id = selected_vehicle_db[0]['id']
+    # * vehicle_name removed from refuel table
+    # sel_vehicle_name = selected_vehicle_db[0]['name']
 
-        # ensure volume exist, and it's bigger than zero, if so convert the value into float
-        if not volume or not float(volume) > 0 or not float(volume) < 10000:
-            return errorMsg("Invalid volume! Value must be between 0 and 10000")
-        else:
-            volume = float(request.form.get("volume"))
+    # current total distance traveled that can be read on the odometer (int type)
+    distance = request.form.get("distance")
 
-        # unit price of refuel (float type)
-        unit_price = request.form.get("price")
-
-        # ensure price exist, and it's greater than zero, if so convert the value into float
-        if not unit_price or not float(unit_price) > 0 or not float(unit_price) < 10000000:
-            return errorMsg("Invalid unit price! Value must be between 0 and 10000000")
-        else:
-            unit_price = float(unit_price)
-
-        # calculate total price
-        total_price = unit_price * volume
-
-        # insert new entry into database
-        # * vehicle_name removed from refuel table
-        try:
-            db.execute("INSERT INTO refuels (date, distance, volume, price, total_price, user_id, vehicle_id) VALUES(?,?,?,?,?,?,?)",
-                       date, distance, volume, unit_price, total_price, user_id, sel_vehicle_id)
-        except:
-            return errorMsg("Ooops! An error has been occured :(")
-
-        # select updated database after a new entry
-        refuels_upd_db = db.execute(
-            "SELECT refuels.id, refuels.date, refuels.distance, "
-            "refuels.volume, refuels.price, refuels.total_price, "
-            "refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "ORDER BY refuels.date DESC LIMIT 3;", user_id)
-
-        # length of updated refuels rows
-        ref_len_upd = len(refuels_upd_db)
-
-        # length of updated vehicles rows
-        vehicles_len = len(db.execute(
-            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
-
-        # query updated statistics
-        # * FIXED instead of GROUP BY vehicle_id -> temporarily vehicle_name
-        statistics_db_upd = db.execute(
-            "SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
-            "vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "GROUP BY vehicles.id", user_id)
-
-        onShow_upd = False
-        for stat in statistics_db_upd:
-            if stat["distance"] > 0:
-                onShow_upd = True
-                break
-
-        # retrieve updated refuels to show on chart
-        chart_db_upd = db.execute(
-            "SELECT SUM(total_price) AS total_price, "
-            "date_trunc('month', date::timestamptz) AS mon "
-            "FROM refuels "
-            "WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
-            "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
-            "GROUP BY mon", user_id)
-
-        # updated chart's labes & values
-        # labels_upd = [
-        #     months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1] for x in chart_db_upd]
-        labels_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
-        values_upd = [x["total_price"] for x in chart_db_upd]
-
-        return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, show=onShow_upd, username=username)
-
-    # user reached route via PUT, DELETE
+    # ensure distance exist, and it's bigger than zero, if so convert the value into integer
+    if not distance or not int(distance) > 0 or not int(distance) < 10000000:
+        return errorMsg("Invalid odometer reading! Value must be between 0 and 10000000")
     else:
-        return errorMsg("You're NOT authorized!")
+        distance = int(distance)
+
+    # volume of refuel (float type)
+    volume = request.form.get("volume")
+
+    # ensure volume exist, and it's bigger than zero, if so convert the value into float
+    if not volume or not float(volume) > 0 or not float(volume) < 10000:
+        return errorMsg("Invalid volume! Value must be between 0 and 10000")
+    else:
+        volume = float(request.form.get("volume"))
+
+    # unit price of refuel (float type)
+    unit_price = request.form.get("price")
+
+    # ensure price exist, and it's greater than zero, if so convert the value into float
+    if not unit_price or not float(unit_price) > 0 or not float(unit_price) < 10000000:
+        return errorMsg("Invalid unit price! Value must be between 0 and 10000000")
+    else:
+        unit_price = float(unit_price)
+
+    # calculate total price
+    total_price = unit_price * volume
+
+    # insert new entry into database
+    # * vehicle_name removed from refuel table
+    try:
+        db.execute("INSERT INTO refuels "
+                   "(date, distance, volume, price, total_price, user_id, vehicle_id) "
+                   "VALUES(?,?,?,?,?,?,?)",
+                   date, distance, volume, unit_price, total_price, user_id, sel_vehicle_id)
+    except:
+        return errorMsg("Ooops! An error has been occured :(")
+
+    # select updated database after a new entry
+    refuels_upd_db = db.execute(
+        "SELECT refuels.id, refuels.date, refuels.distance, "
+        "refuels.volume, refuels.price, refuels.total_price, "
+        "refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name "
+        "FROM refuels "
+        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        "WHERE refuels.user_id=? "
+        "ORDER BY refuels.date DESC LIMIT 3;", user_id)
+
+    # length of updated refuels rows
+    ref_len_upd = len(refuels_upd_db)
+
+    # length of updated vehicles rows
+    vehicles_len = len(db.execute(
+        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+
+    # query updated statistics
+    # * FIXED instead of GROUP BY vehicle_id -> temporarily vehicle_name
+    statistics_db_upd = db.execute(
+        "SELECT (MAX(distance) - MIN(distance)) AS distance, "
+        "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+        "vehicles.name AS vehicle_name "
+        "FROM refuels "
+        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        "WHERE refuels.user_id=? "
+        "GROUP BY vehicles.id", user_id)
+
+    onShow_upd = False
+    for stat in statistics_db_upd:
+        if stat["distance"] > 0:
+            onShow_upd = True
+            break
+
+    # retrieve updated refuels to show on chart
+    chart_db_upd = db.execute(
+        "SELECT SUM(total_price) AS total_price, "
+        "date_trunc('month', date::timestamptz) AS mon "
+        "FROM refuels "
+        "WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+        "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+        "GROUP BY mon", user_id)
+
+    # updated chart's labes & values
+    labels_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
+    values_upd = [x["total_price"] for x in chart_db_upd]
+
+    return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, show=onShow_upd)
 
 
 @ app.route("/account")
