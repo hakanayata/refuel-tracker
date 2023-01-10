@@ -9,7 +9,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import errorMsg, login_required, cur, avr, validate_password, dist, vol
+from helpers import errorMsg, login_required, cur, avr, validate_password, dist, vol, get_currency_symbol
 
 # Configure application
 app = Flask(__name__)
@@ -80,7 +80,8 @@ def index():
     user = user_db[0]
 
     username = user["username"]
-    currency_symbol = user["currency"][-1]
+    # currency_symbol = user["currency"][-1]
+    currency_symbol = get_currency_symbol(user["currency"])
     distance_unit = user["distance_unit"]
     volume_unit = user["volume_unit"]
 
@@ -171,7 +172,8 @@ def add_refuel():
     user = user_db[0]
     # ? no need to send username to html
     # username = user["username"]
-    currency_symbol = user["currency"][-1]
+    # currency_symbol = user["currency"][-1]
+    currency_symbol = get_currency_symbol(user["currency"])
     distance_unit = user["distance_unit"]
     volume_unit = user["volume_unit"]
 
@@ -765,7 +767,8 @@ def history():
 
     user = user_db[0]
 
-    currency_symbol = user["currency"][-1]
+    # currency_symbol = user["currency"][-1]
+    currency_symbol = get_currency_symbol(user["currency"])
     distance_unit = user["distance_unit"]
     volume_unit = user["volume_unit"]
 
@@ -957,7 +960,8 @@ def vehicles():
 
     user = user_db[0]
 
-    currency_symbol = user["currency"][-1]
+    # currency_symbol = user["currency"][-1]
+    currency_symbol = get_currency_symbol(user["currency"])
     distance_unit = user["distance_unit"]
     volume_unit = user["volume_unit"]
 
