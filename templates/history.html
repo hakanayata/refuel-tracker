@@ -38,11 +38,11 @@ History
         type: 'bar',
         data: {
             // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-            labels: {{ labels | safe }},
+            labels: {{ chart_dates | safe }},
     datasets: [{
         axis: 'y',
         label: 'Fuel Expenses',
-        data: {{ values | safe }},
+        data: {{ chart_prices | safe }},
         backgroundColor: [
         'rgba(23, 140, 120, .7)',
     ],

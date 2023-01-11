@@ -142,7 +142,7 @@
 
 <!-- <hr class="text-light mx-auto w-75 w-sm-92 mt-5" /> -->
 
-{% if show %}
+{% if showStats %}
 <table
   class="align-middle caption-top my-5 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
   <span class="text-secondary text-center hr-title stats">Stats</span>
@@ -151,23 +151,19 @@
   </caption> -->
   <thead class="align-middle">
     <tr>
-      <!-- {% if show %} -->
       <th>Vehicle</th>
       <th>Total Distance Traveled</th>
       <th>Total Fuel Volume Added</th>
       <th>Total Expenses</th>
-      <!-- {% endif %} -->
     </tr>
   </thead>
   <tbody>
     {% for stat in stats %}
     <tr>
-      <!-- {% if stat["distance"] > 0 %} -->
       <td>{{ stat["vehicle_name"] }}</td>
       <td>{{ stat["distance"] | dist(distance_unit) }}</td>
       <td>{{ stat["liters"] | vol(volume_unit) }}</td>
       <td>{{ stat["expenses"] | cur(symbol) }}</td>
-      <!-- {% endif %} -->
     </tr>
     {% endfor %}
   </tbody>
@@ -203,28 +199,28 @@
 
 <script>
   const ctx = document.getElementById('myChart').getContext('2d');
-  const myChart = new Chart(ctx, {
+  new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: {{ labels | safe }},
-  datasets: [{
-    axis: 'y',
-    label: 'Fuel Expenses',
-    data: {{ values | safe }},
+      labels: {{ chart_dates | safe }},
+    datasets: [{
+      axis: 'y',
+      label: 'Fuel Expenses',
+      data: {{ chart_prices | safe }},
     backgroundColor: [
-    'rgba(23, 140, 120, .7)',
-  ],
+      'rgba(23, 140, 120, .7)',
+    ],
     borderColor: [
-    'rgba(64, 225, 176, 1)',
-  ],
+      'rgba(64, 225, 176, 1)',
+    ],
     borderWidth: 1,
         }]
       },
-  options: {
+    options: {
     scales: {
       y: {
         beginAtZero: true,
-          ticks: {
+        ticks: {
           color: '#ddd',
         }
       },
@@ -235,8 +231,8 @@
       }
     },
     indexAxis: 'y',
-      color: '#aaa',
-        animation: false,
+    color: '#aaa',
+    animation: false,
   }
   });
 </script>

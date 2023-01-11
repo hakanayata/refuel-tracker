@@ -40,6 +40,11 @@ db = SQL(uri)
 
 # ***** CONFIGURING ENDS HERE *****
 
+# ? FEATURES TO ADD ?
+# • date filter history
+# • date filter graph
+# • car share
+
 # X todo: retrieve username as value (not placeholder) on change-username.html page
 # X todo: set char limit for names (vehicle, license plate, username)
 # X todo: set limit for odometer, volume, unit price
@@ -77,6 +82,10 @@ def index():
     except:
         return errorMsg("Couldn't retrieve data from server. Please refresh the page.")
 
+    # extra validation
+    if not user_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
     user = user_db[0]
 
     username = user["username"]
@@ -86,59 +95,83 @@ def index():
     volume_unit = user["volume_unit"]
 
     # select vehicles to show in dropdown menu
-    vehicles = db.execute(
-        "SELECT * FROM vehicles WHERE user_id=?", user_id)
+    try:
+        vehicles = db.execute(
+            "SELECT * FROM vehicles WHERE user_id=?", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    # length of distinct vehicles' array, this will help 2 things:
+    if not vehicles:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    # length of distinct vehicles' array, this will help with 2 things:
     # in order to hide/show tables in case no vehicle exist
     # if there's more than 1 vehicle, show one more column (vehicle name) on table
-    vehicles_len = len(db.execute(
-        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+    try:
+        vehicles_len = len(db.execute(
+            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not vehicles_len:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # retrieve last 3 entries from refuels table
-    latest_refuels = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, "
-        "refuels.price, refuels.total_price, refuels.user_id, "
-        "refuels.vehicle_id, vehicles.name AS vehicle_name "
-        "FROM refuels "
-        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-        "WHERE refuels.user_id=? "
-        "ORDER BY refuels.date DESC LIMIT 3;", user_id)
+    try:
+        latest_refuels = db.execute(
+            "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, "
+            "refuels.price, refuels.total_price, refuels.user_id, "
+            "refuels.vehicle_id, vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "ORDER BY refuels.date DESC LIMIT 3;", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not latest_refuels:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # length of refuels to show/hide tables (most recent entries & statistics table)
     ref_len = len(latest_refuels)
 
     # query for total distance traveled & total liters & total expenses
     # * FIXED: instead of GROUP BY vehicle_id -> temporarily vehicle_name
-    statistics_db = db.execute(
-        "SELECT (MAX(distance) - MIN(distance)) AS distance, "
-        "SUM(volume) AS liters, SUM (total_price) AS expenses, "
-        "vehicles.name AS vehicle_name "
-        "FROM refuels "
-        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-        "WHERE refuels.user_id=? "
-        "GROUP BY vehicles.id", user_id)
+    try:
+        statistics_db = db.execute(
+            "SELECT (MAX(distance) - MIN(distance)) AS distance, "
+            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "GROUP BY vehicles.id", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # stats' table should show when one vehicle has at least 2 transactions
-    onShow = False
+    show_stats = False
     for stat in statistics_db:
         if stat["distance"] > 0:
-            onShow = True
+            show_stats = True
             break
-
-    # abbreviations for chart
-    # months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    #           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     # query label (show day-month-year) and value (total fuel expense) to show on chart
     # ? PostgreSQL version
-    chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, "
-        "date_trunc('month', date::timestamptz) AS mon "
-        "FROM refuels WHERE user_id=? "
-        "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
-        "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
-        "GROUP BY mon", user_id)
+    try:
+        chart_db = db.execute(
+            "SELECT SUM(total_price) AS total_price, "
+            "date_trunc('month', date::timestamptz) AS mon "
+            "FROM refuels WHERE user_id=? "
+            "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+            "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+            "GROUP BY mon", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not chart_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
     # ? SQLite version
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", user_id)
 
@@ -146,13 +179,13 @@ def index():
     # labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
     #           for x in chart_db]
 
-    labels = [x["mon"].strftime('%m-%Y') for x in chart_db]
-    values = [x["total_price"] for x in chart_db]
+    chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
+    chart_prices = [x["total_price"] for x in chart_db]
 
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
     # if request.method == "GET":
-    return render_template("index.html", vehicles=vehicles, refuels=latest_refuels, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, show=onShow, username=username)
+    return render_template("index.html", vehicles=vehicles, refuels=latest_refuels, ref_len=ref_len, veh_len=vehicles_len, chart_dates=chart_dates, chart_prices=chart_prices, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, showStats=show_stats, username=username)
 
 
 # * POST carries request parameter in message body
@@ -164,35 +197,68 @@ def add_refuel():
     user_id = session["user_id"]
 
     try:
-        date = request.form.get("datetime")
         user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
     except:
-        return errorMsg("An error has been occured during the process of assigning a value to date!")
+        return errorMsg("Could not retrieve data from the server. Please try again.")
+
+    # extra validation
+    if not user_db:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
 
     user = user_db[0]
-    # ? no need to send username to html
+    # ? is there really a need for sending username to jinja
     # username = user["username"]
-    # currency_symbol = user["currency"][-1]
     currency_symbol = get_currency_symbol(user["currency"])
     distance_unit = user["distance_unit"]
     volume_unit = user["volume_unit"]
 
     # select vehicles to show in dropdown menu
-    vehicles = db.execute("SELECT * FROM vehicles WHERE user_id=?", user_id)
+    try:
+        vehicles = db.execute(
+            "SELECT * FROM vehicles WHERE user_id=?", user_id)
+    except:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
+
+    # extra validation
+    if not vehicles:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
+
+    # length of distinct vehicles' array, this will help with 2 things:
+    # in order to hide/show tables in case no vehicle exist
+    # if there's more than 1 vehicle, show one more column (vehicle name) on table
+    try:
+        vehicles_len = len(db.execute(
+            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not vehicles_len:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     vehicle_names = [vehicle['name'] for vehicle in vehicles]
 
     selected_vehicle = request.form.get("vehicle")
+
     # validation
     if not selected_vehicle or not selected_vehicle in vehicle_names:
         return errorMsg("Invalid vehicle!")
 
     # ? if user has more than one car, list should also show vehicle_name field
-    selected_vehicle_db = db.execute(
-        "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
+    try:
+        selected_vehicle_db = db.execute(
+            "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
+    except:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
+
+    if not selected_vehicle_db:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
+
     sel_vehicle_id = selected_vehicle_db[0]['id']
-    # * vehicle_name removed from refuel table
-    # sel_vehicle_name = selected_vehicle_db[0]['name']
+
+    # ensure date exists
+    date = request.form.get("datetime")
+    if not date:
+        return errorMsg("Invalid date! Please enter a valid date.")
 
     # current total distance traveled that can be read on the odometer (int type)
     distance = request.form.get("distance")
@@ -225,63 +291,78 @@ def add_refuel():
     total_price = unit_price * volume
 
     # insert new entry into database
-    # * vehicle_name removed from refuel table
     try:
         db.execute("INSERT INTO refuels "
                    "(date, distance, volume, price, total_price, user_id, vehicle_id) "
                    "VALUES(?,?,?,?,?,?,?)",
                    date, distance, volume, unit_price, total_price, user_id, sel_vehicle_id)
     except:
-        return errorMsg("Ooops! An error has been occured :(")
+        return errorMsg("Ooops! An error has been occured during the INSERTION :(")
 
-    # select updated database after a new entry
-    refuels_upd_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, "
-        "refuels.volume, refuels.price, refuels.total_price, "
-        "refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name "
-        "FROM refuels "
-        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-        "WHERE refuels.user_id=? "
-        "ORDER BY refuels.date DESC LIMIT 3;", user_id)
+    # select updated refeuls after a new entry
+    try:
+        refuels_upd_db = db.execute(
+            "SELECT refuels.id, refuels.date, refuels.distance, "
+            "refuels.volume, refuels.price, refuels.total_price, "
+            "refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "ORDER BY refuels.date DESC LIMIT 3;", user_id)
+    except:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
+
+    # extra validation
+    if not refuels_upd_db:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
 
     # length of updated refuels rows
     ref_len_upd = len(refuels_upd_db)
 
-    # length of updated vehicles rows
-    vehicles_len = len(db.execute(
-        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
-
     # query updated statistics
-    # * FIXED instead of GROUP BY vehicle_id -> temporarily vehicle_name
-    statistics_db_upd = db.execute(
-        "SELECT (MAX(distance) - MIN(distance)) AS distance, "
-        "SUM(volume) AS liters, SUM (total_price) AS expenses, "
-        "vehicles.name AS vehicle_name "
-        "FROM refuels "
-        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-        "WHERE refuels.user_id=? "
-        "GROUP BY vehicles.id", user_id)
+    try:
+        statistics_db_upd = db.execute(
+            "SELECT (MAX(distance) - MIN(distance)) AS distance, "
+            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "GROUP BY vehicles.id", user_id)
+    except:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
 
-    onShow_upd = False
+    # extra validation
+    if not statistics_db_upd:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
+
+    show_stats_upd = False
     for stat in statistics_db_upd:
         if stat["distance"] > 0:
-            onShow_upd = True
+            show_stats_upd = True
             break
 
     # retrieve updated refuels to show on chart
-    chart_db_upd = db.execute(
-        "SELECT SUM(total_price) AS total_price, "
-        "date_trunc('month', date::timestamptz) AS mon "
-        "FROM refuels "
-        "WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
-        "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
-        "GROUP BY mon", user_id)
+    try:
+        chart_db_upd = db.execute(
+            "SELECT SUM(total_price) AS total_price, "
+            "date_trunc('month', date::timestamptz) AS mon "
+            "FROM refuels "
+            "WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+            "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+            "GROUP BY mon", user_id)
+    except:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
+
+    # extra validation
+    if not chart_db_upd:
+        return errorMsg("Could not retrieve data from the server. Please try again.")
 
     # updated chart's labes & values
-    labels_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
-    values_upd = [x["total_price"] for x in chart_db_upd]
+    chart_dates_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
+    chart_prices_upd = [x["total_price"] for x in chart_db_upd]
 
-    return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, labels=labels_upd, values=values_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, show=onShow_upd)
+    return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, chart_dates=chart_dates_upd, chart_prices=chart_prices_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, showStats=show_stats_upd)
 
 
 @ app.route("/account")
@@ -303,12 +384,20 @@ def changeCur():
     # symbols = [x[-1] for x in currencies]
 
     # user's unit settings
-    user_units_db = db.execute(
-        "SELECT currency, distance_unit, volume_unit FROM users WHERE id=?", user_id)
+    try:
+        user_units_db = db.execute(
+            "SELECT currency, distance_unit, volume_unit FROM users WHERE id=?", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    user_currency = user_units_db[0]["currency"]
-    user_distance_unit = user_units_db[0]["distance_unit"]
-    user_volume_unit = user_units_db[0]["volume_unit"]
+    if not user_units_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    user_units = user_units_db[0]
+
+    user_currency = user_units["currency"]
+    user_distance_unit = user_units["distance_unit"]
+    user_volume_unit = user_units["volume_unit"]
 
     other_currencies = []
     for currency in currencies:
@@ -377,8 +466,15 @@ def changePassword():
     elif request.method == "POST":
 
         # query existing hashed password
-        password_db = db.execute(
-            "SELECT hash FROM users WHERE id=?", user_id)
+        try:
+            password_db = db.execute(
+                "SELECT hash FROM users WHERE id=?", user_id)
+        except:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+        if not password_db:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
         old_hash = password_db[0]["hash"]
 
         # old password submitted by user
@@ -527,22 +623,30 @@ def deleteVehicle(id):
     """Deletes vehicle after confirmation"""
     if request.method == "POST":
 
-        vehicle_delete_db = db.execute(
-            "SELECT * FROM vehicles WHERE user_id=? AND id=?", session["user_id"], id)
+        try:
+            vehicle_delete_db = db.execute(
+                "SELECT * FROM vehicles WHERE user_id=? AND id=?", session["user_id"], id)
+        except:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         if not vehicle_delete_db:
             return errorMsg("Not found!")
 
         vehicle = vehicle_delete_db[0]['name']
 
-        # if vehicle has refuel transaction(s), remove those
-        rows = db.execute("SELECT * FROM refuels WHERE vehicle_id=?", id)
+        # delete refuels first
+        try:
+            rows = db.execute("SELECT * FROM refuels WHERE vehicle_id=?", id)
+        except:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
         if len(rows) > 0:
             try:
                 db.execute("DELETE FROM refuels WHERE vehicle_id=?", id)
             except:
                 return errorMsg("Ooops! An error has been occured while deleting from refuels table :( ")
 
+        # delete vehicle
         try:
             db.execute("DELETE FROM vehicles WHERE id=?", id)
         except:
@@ -564,13 +668,17 @@ def edit(id):
 
     # retrieve user's refuel row from database
     # * vehicle_name removed from refuel table
-    refuel_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, "
-        "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
-        "refuels.vehicle_id, vehicles.name AS vehicle_name "
-        "FROM refuels "
-        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-        "WHERE refuels.user_id=? AND refuels.id=?", user_id, id)
+    try:
+        refuel_db = db.execute(
+            "SELECT refuels.id, refuels.date, refuels.distance, "
+            "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
+            "refuels.vehicle_id, vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? AND refuels.id=?", user_id, id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
     # ensure refuel submitted was valid
     if not refuel_db:
         return errorMsg("Not found!")
@@ -650,11 +758,14 @@ def edit(id):
 
             # retrieve new vehicle's id from database
             else:
-                vehicle_id_db = db.execute(
-                    "SELECT id FROM vehicles WHERE user_id=? AND name=?", user_id, vehicle_name)
-                vehicle_id = vehicle_id_db[0]["id"]
+                try:
+                    vehicle_id_db = db.execute(
+                        "SELECT id FROM vehicles WHERE user_id=? AND name=?", user_id, vehicle_name)
+                    vehicle_id = vehicle_id_db[0]["id"]
+                except:
+                    return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
             # update database with edited refuel transaction
-            # * vehicle_name removed from refuel table
             try:
                 db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=? WHERE id=?",
                            date, distance, volume, price, total_price, vehicle_id, id)
@@ -662,8 +773,8 @@ def edit(id):
                 return errorMsg("Ooops! An error has been occured :(")
 
         else:
+
             # update database with edited refuel transaction
-            # * vehicle_name removed from refuel table
             try:
                 db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=? WHERE id=?",
                            date, distance, volume, price, total_price, id)
@@ -684,8 +795,11 @@ def editVehicle(id):
     """Edits vehicle name or plate number"""
     user_id = session["user_id"]
     # query for vehicle to be edited
-    vehicle_db = db.execute(
-        "SELECT name, license_plate FROM vehicles WHERE user_id=? AND id=?", user_id, id)
+    try:
+        vehicle_db = db.execute(
+            "SELECT name, license_plate FROM vehicles WHERE user_id=? AND id=?", user_id, id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # user musn't reach ids that aren't his/her, by changing the URL manually
     if not vehicle_db:
@@ -695,8 +809,14 @@ def editVehicle(id):
     current_vehicle_name = vehicle_db[0]['name']
 
     # every vehicle from user, used in name check below
-    user_vehicles_db = db.execute(
-        "SELECT * FROM vehicles WHERE user_id=?", user_id)
+    try:
+        user_vehicles_db = db.execute(
+            "SELECT * FROM vehicles WHERE user_id=?", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not user_vehicles_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if request.method == "GET":
         return render_template("edit-vehicle.html", vehicle=vehicle_db, id=id)
@@ -765,6 +885,9 @@ def history():
     except RuntimeError:
         return errorMsg("Could not receieve data from server. Please refresh the page.")
 
+    if not user_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
     user = user_db[0]
 
     # currency_symbol = user["currency"][-1]
@@ -773,40 +896,54 @@ def history():
     volume_unit = user["volume_unit"]
 
     # query all transactions
-    refuels_db = db.execute(
-        "SELECT refuels.id, refuels.date, refuels.distance, "
-        "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
-        "refuels.vehicle_id, vehicles.name AS vehicle_name "
-        "FROM refuels "
-        "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-        "WHERE refuels.user_id=? "
-        "ORDER BY refuels.date DESC", user_id)
+    try:
+        refuels_db = db.execute(
+            "SELECT refuels.id, refuels.date, refuels.distance, "
+            "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
+            "refuels.vehicle_id, vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "ORDER BY refuels.date DESC", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not refuels_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # length of transactions
     ref_len = len(refuels_db)
 
     # retrieve grand total of total price column
-    sum_expense_db = db.execute(
-        "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", user_id)
+    try:
+        sum_expense_db = db.execute(
+            "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not sum_expense_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # grand total
     sum_expense = sum_expense_db[0]["grand_total"]
 
-    # abbr. of months for chart
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
     # sum (group) each month's transactions for more concise/clean chart
 
     # PostgreSQL version (shows last 12 months)
-    chart_db = db.execute(
-        "SELECT SUM(total_price) AS total_price, "
-        "date_trunc('month', date::timestamptz) AS mon "
-        "FROM refuels "
-        "WHERE user_id=? "
-        "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
-        "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) "
-        "GROUP BY mon", user_id)
+    try:
+        chart_db = db.execute(
+            "SELECT SUM(total_price) AS total_price, "
+            "date_trunc('month', date::timestamptz) AS mon "
+            "FROM refuels "
+            "WHERE user_id=? "
+            "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+            "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) "
+            "GROUP BY mon", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not chart_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # SQLite version (shows current year only)
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
@@ -814,17 +951,23 @@ def history():
     # pick month part from the string to show as label of the chart
     # labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
     #           for x in chart_db]
-    labels = [x["mon"].strftime('%m-%Y') for x in chart_db]
+    chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
 
     # total expense for that specific month
-    values = [x["total_price"] for x in chart_db]
+    chart_prices = [x["total_price"] for x in chart_db]
 
     # length of refuel transactions
-    vehicles_len = len(db.execute(
-        "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+    try:
+        vehicles_len = len(db.execute(
+            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    if not vehicles_len:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if request.method == "GET":
-        return render_template("history.html", refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, labels=labels, values=values, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, total_expenses=sum_expense)
+        return render_template("history.html", refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, chart_dates=chart_dates, chart_prices=chart_prices, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, total_expenses=sum_expense)
     else:
         return errorMsg("You're not authorized for this action!")
 
@@ -848,8 +991,14 @@ def login():
             return errorMsg("Type a valid password")
 
         # Query database for username
-        users_db = db.execute("SELECT * FROM users WHERE username = ?",
-                              request.form.get("username"))
+        try:
+            users_db = db.execute("SELECT * FROM users WHERE username = ?",
+                                  request.form.get("username"))
+        except:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+        if not users_db:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         # Ensure username exists and password is correct
         if not len(users_db) == 1 or not check_password_hash(users_db[0]["hash"], request.form.get("password")):
@@ -911,7 +1060,13 @@ def signup():
 
         # if username already exist
         # retrieve users from database
-        users_db = db.execute("SELECT * FROM users")
+        try:
+            users_db = db.execute("SELECT * FROM users")
+        except:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+        if not users_db:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         # ensure username does not exist
         for user in users_db:
@@ -922,7 +1077,14 @@ def signup():
         hash = generate_password_hash(password)
 
         # add register date to table
-        register_date_db = db.execute("SELECT NOW()")
+        try:
+            register_date_db = db.execute("SELECT NOW()")
+        except:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+        if not register_date_db:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
         register_date = register_date_db[0]["now"]
 
         # INSERT INTO db new user's information
@@ -958,6 +1120,9 @@ def vehicles():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
+    if not user_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
     user = user_db[0]
 
     # currency_symbol = user["currency"][-1]
@@ -966,15 +1131,21 @@ def vehicles():
     volume_unit = user["volume_unit"]
 
     # retrieve total volume of refuels, total cost of refuels from vehicles table
-    vehicles_db = db.execute(
-        "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
-        "SUM(volume) AS liters, SUM(total_price) AS expenses "
-        "FROM vehicles "
-        "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
-        "WHERE vehicles.user_id=? "
-        "GROUP BY vehicles.id "
-        "ORDER BY vehicles.id", user_id)
+    try:
+        vehicles_db = db.execute(
+            "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
+            "SUM(volume) AS liters, SUM(total_price) AS expenses "
+            "FROM vehicles "
+            "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
+            "WHERE vehicles.user_id=? "
+            "GROUP BY vehicles.id "
+            "ORDER BY vehicles.id", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
     # vehicles_db = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
+
+    if not vehicles_db:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # length of vehicles list
     veh_length = len(vehicles_db)
@@ -1028,15 +1199,21 @@ def vehicles():
             return errorMsg("Ooops! An error has been occured :(")
 
         # select updated version of data
-        vehicles_db_uptd = db.execute(
-            "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
-            "SUM(volume) AS liters, SUM(total_price) AS expenses "
-            "FROM vehicles "
-            "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
-            "WHERE vehicles.user_id=? "
-            "GROUP BY vehicles.id "
-            "ORDER BY vehicles.id", user_id)
+        try:
+            vehicles_db_uptd = db.execute(
+                "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
+                "SUM(volume) AS liters, SUM(total_price) AS expenses "
+                "FROM vehicles "
+                "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
+                "WHERE vehicles.user_id=? "
+                "GROUP BY vehicles.id "
+                "ORDER BY vehicles.id", user_id)
+        except:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
         # vehicles_db_uptd = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
+
+        if not vehicles_db_uptd:
+            return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         # length of updated list
         veh_len_upd = len(vehicles_db_uptd)

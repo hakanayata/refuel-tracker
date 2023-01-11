@@ -15,13 +15,12 @@ def avr(value):
 def cur(value, currency):
     """Format value as any currency"""
     try:
-        return f"{value:,.2f} {currency}"
+        if currency in ['€', '₺']:
+            return f"{value:,.2f} {currency}"
+        else:
+            return f"{currency} {value:,.2f}"
     except:
         return f"TBD"
-
-
-def get_currency_symbol(currency):
-    return currency[-1]
 
 
 def errorMsg(message):
@@ -32,6 +31,10 @@ def errorMsg(message):
 def dist(value, unit):
     """Format distance value as kilometer or mile"""
     return f"{value:,} {unit}".replace(",", " ")
+
+
+def get_currency_symbol(currency):
+    return currency[-1]
 
 
 def login_required(f):
