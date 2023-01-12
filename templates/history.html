@@ -16,60 +16,178 @@ History
 
 <span class="d-block text-secondary text-center mb-4 hr-title chart">Chart</span>
 
-<div class="container">
-    <div class="row">
-        <div class="mx-auto w-50 w-sm-100">
-            <div class="card border-secondary">
-                <div class="card-header bg-dark text-center">
-                    <p style="color: #40e1b0">MONTHLY TOTAL FUEL EXPENSES - LAST 12 MONTHS</p>
+<div class="container-fluid">
+    <div class="row d-flex justify-content-center">
+        <div class="col-md-9">
+            <div class="mx-auto">
+                <div class="card border-secondary">
+                    <div class="card-header bg-dark text-center">
+                        <p style="color: #40e1b0">MONTHLY TOTAL FUEL EXPENSES - LAST 12 MONTHS</p>
+                    </div>
+                    <div class="bg-dark card-body">
+                        <canvas class="canvas-history" style="background-color: #252932;" id="myChart"></canvas>
+                    </div>
+                    <div class="card-footer bg-dark text-info text-end">
+                        <!-- Expense per month ({{ symbol }}) -->
+                    </div>
                 </div>
-                <div class="bg-dark card-body">
-                    <canvas height="240" class="canvas-history" style="background-color: #252932" id="myChart"></canvas>
-                </div>
-                <div class="card-footer bg-dark text-info text-end">Expense per month ({{ symbol }})</div>
             </div>
+
         </div>
     </div>
 </div>
 
 <script>
-    const ctx = document.getElementById('myChart').getContext('2d');
-    const myChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            // labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-            labels: {{ chart_dates | safe }},
-    datasets: [{
-        axis: 'y',
-        label: 'Fuel Expenses',
-        data: {{ chart_prices | safe }},
-        backgroundColor: [
-        'rgba(23, 140, 120, .7)',
-    ],
-        borderColor: [
-        'rgba(64, 225, 176, 1)',
-    ],
-        borderWidth: 1,
-            }]
-        },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true,
-                    ticks: {
-                    color: '#ddd',
-                }
-            },
-            x: {
-                ticks: {
-                    color: '#ddd',
-                }
-            }
-        },
-        indexAxis: 'y',
-            color: '#aaa',
+    let chart_dates_js = {{ chart_dates | safe }};
+    let chart_prices_js = {{ chart_prices | safe }};
+    let currency_symbol = "{{ symbol | safe}}";
+    // let switch_axes_on_four = `${chart_prices_js.length > 3 ? 'y' : 'x'}`
+    let chartCanvas = document.getElementById("myChart")
+    window.addEventListener("DOMContentLoaded", () => {
+        if (window.innerWidth < 768) {
+            chartCanvas.setAttribute("height", 300);
+        }
+    })
+
+
+    const rotateOnMobile = () => {
+        if (window.innerWidth > 768) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chart_dates_js,
+                    datasets: [{
+                        axis: 'x',
+                        label: 'Fuel Expenses',
+                        data: chart_prices_js,
+                        backgroundColor: [
+                            'rgba(23, 140, 120, .7)',
+                        ],
+                        borderColor: [
+                            'rgba(64, 225, 176, 1)',
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 3,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                align: 'center',
+                                color: '#ddd',
+                                padding: 6,
+                                callback: function (value, index, ticks) {
+                                    if (currency_symbol === '€' || currency_symbol == '₺') {
+                                        return `${value} ${currency_symbol}`;
+                                    } else {
+                                        return `${currency_symbol} ${value}`;
+                                    }
+                                },
+                            },
+                            grid: {
+                                color: '#333',
+                                tickLength: 5,
+                            },
+                        },
+                        x: {
+                            //beginAtZero: true,
+                            ticks: {
+                                align: 'center',
+                                color: '#ddd',
+                                padding: 6,
+                            },
+                            grid: {
+                                color: '#333',
+                                tickLength: 5,
+                            },
+                        },
+                    },
+                    indexAxis: 'x',
+                    color: '#aaa',
+                    barPercentage: .7,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                    },
+
+                },
+            });
+        } else {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chart_dates_js,
+                    datasets: [{
+                        axis: 'y',
+                        label: 'Fuel Expenses',
+                        data: chart_prices_js,
+                        backgroundColor: [
+                            'rgba(23, 140, 120, .7)',
+                        ],
+                        borderColor: [
+                            'rgba(64, 225, 176, 1)',
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 3,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                align: 'center',
+                                color: '#ddd',
+                                padding: 6,
+                            },
+                            grid: {
+                                color: '#383838',
+                                tickLength: 5,
+                            },
+                        },
+                        x: {
+                            //beginAtZero: true,
+                            ticks: {
+                                align: 'center',
+                                color: '#ddd',
+                                padding: 6,
+                                callback: function (value, index, ticks) {
+                                    if (currency_symbol === '€' || currency_symbol == '₺') {
+                                        return `${value} ${currency_symbol}`;
+                                    } else {
+                                        return `${currency_symbol} ${value}`;
+                                    }
+                                },
+                            },
+                            grid: {
+                                color: '#383838',
+                                tickLength: 5,
+                            },
+                        },
+                    },
+                    indexAxis: 'y',
+                    color: '#aaa',
+                    barPercentage: .8,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        }
+                    }
+                },
+            });
+        }
     }
-    });
+
+    window.addEventListener("DOMContentLoaded", rotateOnMobile)
+
+    // ['DOMContentLoaded', 'resize'].forEach(evnt => window.addEventListener(evnt, rotateOnMobile, false))
+
+
 </script>
 
 <div>
