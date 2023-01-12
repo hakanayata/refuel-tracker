@@ -107,15 +107,6 @@ def index():
     # if not vehicles:
     #     return errorMsg("Could not retrieve data from server. Please refresh the page. #4")
 
-    # length of distinct vehicles' array, this will help with 2 things:
-    # in order to hide/show tables in case no vehicle exist
-    # if there's more than 1 vehicle, show one more column (vehicle name) on table
-    try:
-        vehicles_len = len(db.execute(
-            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
-    except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
     # retrieve last 3 entries from refuels table
     try:
         latest_refuels = db.execute(
@@ -132,6 +123,15 @@ def index():
     # length of refuels to show/hide tables (most recent entries & statistics table)
     ref_len = len(latest_refuels)
 
+    # length of distinct vehicles' array, this will help with 2 things:
+    # in order to hide/show tables in case no vehicle exist
+    # if there's more than 1 vehicle, show one more column (vehicle name) on table
+    try:
+        vehicles_len = len(db.execute(
+            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
     # query for total distance traveled & total liters & total expenses
     # * FIXED: instead of GROUP BY vehicle_id -> temporarily vehicle_name
     try:
@@ -142,16 +142,31 @@ def index():
             "FROM refuels "
             "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
             "WHERE refuels.user_id=? "
-            "GROUP BY vehicles.id", user_id)
+            "GROUP BY vehicles.id "
+            "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    # stats' table should show when one vehicle has at least 2 transactions
-    show_stats = False
-    for stat in statistics_db:
-        if stat["distance"] > 0:
-            show_stats = True
-            break
+    stats_length = len(statistics_db)
+
+    # total expenses from query above
+    try:
+        total_expenses_db = db.execute(
+            "SELECT SUM(expenses) "
+            "FROM "
+            "(SELECT (MAX(distance) - MIN(distance)) AS distance, "
+            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "GROUP BY vehicles.id "
+            "HAVING (MAX(distance) - MIN(distance) > 0)) "
+            "AS vehicles_traveled", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    total_expenses = total_expenses_db[0]['sum']
 
     # query label (show day-month-year) and value (total fuel expense) to show on chart
     # ? PostgreSQL version
@@ -176,12 +191,10 @@ def index():
     chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
     chart_prices = [x["total_price"] for x in chart_db]
 
-    print(f"$$$$$$$ {chart_prices}")
-
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
     # if request.method == "GET":
-    return render_template("index.html", vehicles=vehicles, refuels=latest_refuels, ref_len=ref_len, veh_len=vehicles_len, chart_dates=chart_dates, chart_prices=chart_prices, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, showStats=show_stats, username=username)
+    return render_template("index.html", vehicles=vehicles, refuels=latest_refuels, ref_len=ref_len, veh_len=vehicles_len, chart_dates=chart_dates, chart_prices=chart_prices, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db, stats_length=stats_length, total_expenses=total_expenses, username=username)
 
 
 # * POST carries request parameter in message body
@@ -214,15 +227,6 @@ def add_refuel():
             "SELECT * FROM vehicles WHERE user_id=?", user_id)
     except:
         return errorMsg("Could not retrieve data from the server. Please try again.")
-
-    # length of distinct vehicles' array, this will help with 2 things:
-    # in order to hide/show tables in case no vehicle exist
-    # if there's more than 1 vehicle, show one more column (vehicle name) on table
-    try:
-        vehicles_len = len(db.execute(
-            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
-    except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     vehicle_names = [vehicle['name'] for vehicle in vehicles]
 
@@ -308,6 +312,15 @@ def add_refuel():
     # length of updated refuels rows
     ref_len_upd = len(refuels_upd_db)
 
+    # length of distinct vehicles' array, this will help with 2 things:
+    # in order to hide/show tables in case no vehicle exist
+    # if there's more than 1 vehicle, show one more column (vehicle name) on table
+    try:
+        vehicles_len_upd = len(db.execute(
+            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
     # query updated statistics
     try:
         statistics_db_upd = db.execute(
@@ -317,19 +330,31 @@ def add_refuel():
             "FROM refuels "
             "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
             "WHERE refuels.user_id=? "
-            "GROUP BY vehicles.id", user_id)
+            "GROUP BY vehicles.id "
+            "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
     except:
         return errorMsg("Could not retrieve data from the server. Please try again.")
 
-    # extra validation
-    if not statistics_db_upd:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+    stats_length_upd = len(statistics_db_upd)
 
-    show_stats_upd = False
-    for stat in statistics_db_upd:
-        if stat["distance"] > 0:
-            show_stats_upd = True
-            break
+    # total expenses from query above
+    try:
+        total_expenses_db_upd = db.execute(
+            "SELECT SUM(expenses) "
+            "FROM "
+            "(SELECT (MAX(distance) - MIN(distance)) AS distance, "
+            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "vehicles.name AS vehicle_name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+            "WHERE refuels.user_id=? "
+            "GROUP BY vehicles.id "
+            "HAVING (MAX(distance) - MIN(distance) > 0)) "
+            "AS vehicles_traveled", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+
+    total_expenses = total_expenses_db_upd[0]['sum']
 
     # retrieve updated refuels to show on chart
     try:
@@ -351,7 +376,7 @@ def add_refuel():
     chart_dates_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
     chart_prices_upd = [x["total_price"] for x in chart_db_upd]
 
-    return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len, chart_dates=chart_dates_upd, chart_prices=chart_prices_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, showStats=show_stats_upd)
+    return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len_upd, chart_dates=chart_dates_upd, chart_prices=chart_prices_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, stats_length=stats_length_upd, total_expenses=total_expenses)
 
 
 @ app.route("/account")

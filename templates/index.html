@@ -142,7 +142,7 @@
 
 <!-- <hr class="text-light mx-auto w-75 w-sm-92 mt-5" /> -->
 
-{% if showStats %}
+{% if stats %}
 <table
   class="align-middle caption-top my-5 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
   <span class="text-secondary text-center hr-title stats">Stats</span>
@@ -167,6 +167,19 @@
     </tr>
     {% endfor %}
   </tbody>
+  {% if stats_length >=2 %}
+  <tfoot>
+    <tr>
+      <td class="border-0 fs-md-5 fw-bold text-end ms-auto grand-total" colspan="3">
+        Grand Total:
+      </td>
+      <td class="border-0 fs-md-5 fw-bold text-center grand-total" colspan="1"> {{ total_expenses |
+        cur(symbol) }}
+      </td>
+    </tr>
+
+  </tfoot>
+  {% endif %}
 </table>
 
 <!-- <hr class="text-light mx-auto w-75 w-sm-92 my-5" /> -->
