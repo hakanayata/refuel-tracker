@@ -52,6 +52,8 @@ db = SQL(uri)
 # X todo: print should show table borders
 # X todo: set default units to EUR and lt
 # todo: refuels table, change distance -> odometer
+# todo: add grand total row to the stats table on home page for users who have multiple vehicles.
+# todo: if vehicles >= 2, make seperate tables for each vehicle on history page?
 
 # ! add minlength and maxlength to password fields on html pages.
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
@@ -101,8 +103,9 @@ def index():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    if not vehicles:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+    # ! this is dumb, new users does not have a car.
+    # if not vehicles:
+    #     return errorMsg("Could not retrieve data from server. Please refresh the page. #4")
 
     # length of distinct vehicles' array, this will help with 2 things:
     # in order to hide/show tables in case no vehicle exist
@@ -111,9 +114,6 @@ def index():
         vehicles_len = len(db.execute(
             "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
-    if not vehicles_len:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # retrieve last 3 entries from refuels table
@@ -127,9 +127,6 @@ def index():
             "WHERE refuels.user_id=? "
             "ORDER BY refuels.date DESC LIMIT 3;", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
-    if not latest_refuels:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # length of refuels to show/hide tables (most recent entries & statistics table)
@@ -169,9 +166,6 @@ def index():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    if not chart_db:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
     # ? SQLite version
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", user_id)
 
@@ -181,6 +175,8 @@ def index():
 
     chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
     chart_prices = [x["total_price"] for x in chart_db]
+
+    print(f"$$$$$$$ {chart_prices}")
 
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
@@ -219,10 +215,6 @@ def add_refuel():
     except:
         return errorMsg("Could not retrieve data from the server. Please try again.")
 
-    # extra validation
-    if not vehicles:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
-
     # length of distinct vehicles' array, this will help with 2 things:
     # in order to hide/show tables in case no vehicle exist
     # if there's more than 1 vehicle, show one more column (vehicle name) on table
@@ -230,9 +222,6 @@ def add_refuel():
         vehicles_len = len(db.execute(
             "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
-    if not vehicles_len:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     vehicle_names = [vehicle['name'] for vehicle in vehicles]
@@ -908,9 +897,6 @@ def history():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    if not refuels_db:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
     # length of transactions
     ref_len = len(refuels_db)
 
@@ -919,9 +905,6 @@ def history():
         sum_expense_db = db.execute(
             "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
-    if not sum_expense_db:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # grand total
@@ -942,9 +925,6 @@ def history():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    if not chart_db:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
     # SQLite version (shows current year only)
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
 
@@ -961,9 +941,6 @@ def history():
         vehicles_len = len(db.execute(
             "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
-    if not vehicles_len:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if request.method == "GET":
@@ -1143,9 +1120,6 @@ def vehicles():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
     # vehicles_db = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
-
-    if not vehicles_db:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # length of vehicles list
     veh_length = len(vehicles_db)
