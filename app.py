@@ -922,7 +922,6 @@ def history():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    print(f" ••••db•• {refuels_db}")
     # length of transactions
     ref_len = len(refuels_db)
 
