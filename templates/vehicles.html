@@ -15,7 +15,8 @@ Vehicles
 </form>
 
 {% if veh_len > 0 %}
-<table class="align-middle caption-top mx-auto table table-bordered table-dark table-striped table-sm w-75 w-sm-100">
+<table class="align-middle caption-top mx-auto table table-bordered table-dark table-striped table-sm w-75 w-sm-100"
+    id="vehicles-table">
     <caption class="text-secondary">List of Vehicles</caption>
     <thead class="align-middle">
         <tr>
@@ -37,13 +38,13 @@ Vehicles
             <td> {{ vehicle["liters"] | vol(volume_unit) }} </td>
             <td> {{ vehicle["expenses"] | cur(symbol) }} </td>
             <td class="exclude-print">
-                <a class="btn btn-outline-warning modify-button" href="{{ url_for('editVehicle', id=vehicle['id']) }}"
+                <a class="btn modify-button edit" href="{{ url_for('editVehicle', id=vehicle['id']) }}"
                     name="{{ vehicle['name'] }}">
                     <i class="fa-solid fa-pen"></i>
                 </a>
 
                 <!-- Button trigger modal -->
-                <button type="button" class="btn btn-danger modify-button" data-bs-toggle="modal"
+                <button type="button" class="btn modify-button delete" data-bs-toggle="modal"
                     data-bs-target="#deleteModal{{ vehicle['id'] }}">
                     <i class="fa-solid fa-trash-can"></i>
                     <!-- <svg xmlns="http://www.w3.org/2000/svg" width="16" height="20" fill="currentColor"

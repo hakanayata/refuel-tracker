@@ -12,8 +12,11 @@ window.addEventListener("DOMContentLoaded", () => {
         document.getElementById("table-show-onload").style.visibility = "visible";
     }
 
-    if (document.getElementById("table-to-print")) {
-        document.getElementById("table-to-print").style.visibility = "visible";
+    // tables on history page
+    let historyTables = document.getElementsByClassName("table-to-print")
+    if (historyTables) {
+        for (let i = 0; i < historyTables.length; i++)
+            historyTables[i].style.visibility = "visible";
     }
 })
 

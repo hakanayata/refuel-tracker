@@ -918,12 +918,28 @@ def history():
             "FROM refuels "
             "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
             "WHERE refuels.user_id=? "
-            "ORDER BY refuels.date DESC", user_id)
+            "ORDER BY vehicles.id ASC, refuels.date DESC", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
+    print(f" ••••db•• {refuels_db}")
     # length of transactions
     ref_len = len(refuels_db)
+
+    # todo: list of vehicles that has transaction(s)
+    try:
+        vehicles_refuelled = db.execute(
+            "SELECT DISTINCT vehicle_id, name "
+            "FROM "
+            "(SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, "
+            "refuels.price, refuels.total_price, refuels.user_id, "
+            "refuels.vehicle_id, vehicles.name "
+            "FROM refuels "
+            "JOIN vehicles ON refuels.vehicle_id=vehicles.id "
+            "WHERE refuels.user_id=?) AS vehicles_refuelled "
+            "ORDER BY vehicle_id", user_id)
+    except:
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # retrieve grand total of total price column
     try:
@@ -969,7 +985,7 @@ def history():
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if request.method == "GET":
-        return render_template("history.html", refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, chart_dates=chart_dates, chart_prices=chart_prices, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, total_expenses=sum_expense)
+        return render_template("history.html", refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, chart_dates=chart_dates, chart_prices=chart_prices, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, total_expenses=sum_expense, vehicles_refuelled=vehicles_refuelled)
     else:
         return errorMsg("You're not authorized for this action!")
 

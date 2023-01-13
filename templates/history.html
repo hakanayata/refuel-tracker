@@ -16,9 +16,9 @@ History
 
 <span class="d-block text-secondary text-center mb-4 hr-title chart">Chart</span>
 
-<div class="container-fluid">
+<div class="container-fluid" id="history-chart-div">
     <div class="row d-flex justify-content-center">
-        <div class="col-md-9">
+        <div class="col-md-9 w-md-50">
             <div class="mx-auto">
                 <div class="card border-secondary">
                     <div class="card-header bg-dark text-center">
@@ -190,11 +190,11 @@ History
 
 </script>
 
-<div>
+<!-- <div>
     <table class="align-middle caption-top mb-5 mx-auto table table-dark table-bordered table-sm w-75 w-sm-100"
         id="table-to-print" style="visibility: hidden">
         <span class="d-block text-secondary text-center mt-5 mb-4 hr-title history">History of Refuels</span>
-        <!-- <caption class="text-secondary">History of Refuel Transactions</caption> -->
+
         <thead class="align-middle">
             <tr>
                 <th>#</th>
@@ -228,20 +228,13 @@ History
                         <i class="fa-solid fa-pen"></i>
                     </a>
 
-                    <!-- Button trigger modal -->
+
                     <button type="button" class="btn btn-danger modify-button delete" data-bs-toggle="modal"
                         data-bs-target="#deleteModal{{ refuel['id'] }}">
                         <i class="fa-solid fa-trash-can"></i>
-                        <!-- <svg xmlns="http://www.w3.org/2000/svg" width="16" height="20" fill="currentColor"
-                            class="bi bi-trash" viewBox="0 0 16 20">
-                            <path
-                                d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-                            <path fill-rule="evenodd"
-                                d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
-                        </svg> -->
                     </button>
 
-                    <!-- Modal -->
+
                     <div class="modal fade" id="deleteModal{{ refuel['id']}}" tabindex="-1"
                         aria-labelledby="deleteModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -287,7 +280,98 @@ History
         </tfoot>
 
     </table>
+</div> -->
+
+<!-- TODO: TABLE FOR EACH VEHICLE -->
+
+<span class="d-block text-secondary text-center mt-5 mb-4 hr-title history">History of Refuels</span>
+
+{% for vehicle in vehicles_refuelled %}
+
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-9 px-0">
+            <table
+                class="align-middle caption-top mb-5 mx-auto table table-dark table-bordered auto-numbered table-to-print"
+                style="visibility: hidden;">
+                <caption class="fs-5 text-light">{{ vehicle.name }}</caption>
+                <thead class="align-middle">
+                    <tr>
+                        <th>#</th>
+                        <th>Date | Time</th>
+                        <th>Odometer Reading</th>
+                        <th>Fuel Volume Added</th>
+                        <th>Unit Price</th>
+                        <th>Total Price</th>
+                        <th class="exclude-print">Modify</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for refuel in refuels %}
+                    {% if refuel['vehicle_id'] == vehicle['vehicle_id'] %}
+                    <tr>
+                        <td></td>
+                        <td class="dateNtime">{{ refuel["date"] }}</td>
+                        <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
+                        <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
+                        <td>{{ refuel["price"] | cur(symbol) }}</td>
+                        <td>{{ refuel["total_price"] | cur(symbol) }}</td>
+                        <td class="exclude-print">
+                            <a class="btn modify-button edit" href="{{ url_for('edit', id=refuel['id']) }}"
+                                name="{{ refuel['id'] }}">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+
+                            <!-- Button trigger modal -->
+                            <button type="button" class="btn modify-button delete" data-bs-toggle="modal"
+                                data-bs-target="#deleteModal{{ refuel['id'] }}">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+
+                            <!-- Modal -->
+                            <div class="modal fade" id="deleteModal{{ refuel['id']}}" tabindex="-1"
+                                aria-labelledby="deleteModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-sm modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h1 class="modal-title fs-5 text-dark" id="deleteModalLabel">
+                                                Confirmation</h1>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="text-dark fs-6">Are you sure?</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary w-auto px-4"
+                                                data-bs-dismiss="modal">No</button>
+                                            <form action="{{ url_for('deleteRefuel', id=refuel['id']) }}" method="post">
+                                                <input class="btn btn-danger w-auto px-4" type="submit" value="Yes">
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+                <!-- <tfoot></tfoot> -->
+            </table>
+        </div>
+    </div>
 </div>
+
+{% endfor %}
+
+
+
+
+
+<!-- TODO: END ------- ------------- -->
 
 <button onclick="window.print()" class="btn btn-outline-info px-4 my-4 mx-3 w-sm-92" id="savepdf" type="button">Save
     PDF</button>
