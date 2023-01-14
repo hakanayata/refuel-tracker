@@ -62,7 +62,7 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
 - `@login_required` decorator, `login()`, `logout()` functions, and with some modifications, `errorMsg()` function utilized in this project were actually from CS50 Finance Project prepared by Harvard CS50 staff.
 
 ###### Feedback
-You might be able to test this application at: heroku.com
+You might be able to test this application at: refuel-tracker.hakanayata.com
 I would appreciate any kind of feedback. (See ***Contact*** below)
 
 
