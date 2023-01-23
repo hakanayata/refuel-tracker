@@ -51,9 +51,10 @@ db = SQL(uri)
 # X todo: show local time on edit
 # X todo: print should show table borders
 # X todo: set default units to EUR and lt
+# X todo: if vehicles >= 2, make seperate tables for each vehicle on history page?
+# X todo: add grand total row to the stats table on home page for users who have multiple vehicles.
 # todo: refuels table, change distance -> odometer
-# todo: add grand total row to the stats table on home page for users who have multiple vehicles.
-# todo: if vehicles >= 2, make seperate tables for each vehicle on history page?
+# todo: history page: show individual grand total row for each vehicle table.
 
 # ! add minlength and maxlength to password fields on html pages.
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
@@ -82,11 +83,11 @@ def index():
         user_db = db.execute(
             "SELECT * FROM users WHERE id=?", user_id)
     except:
-        return errorMsg("Couldn't retrieve data from server. Please refresh the page.")
+        return errorMsg("Couldn't retrieve data from server. Please refresh the page. (r-/-#1)")
 
     # extra validation
     if not user_db:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("No such user. Please check your credentials. (r-/-#2)")
 
     user = user_db[0]
 
@@ -101,7 +102,7 @@ def index():
         vehicles = db.execute(
             "SELECT * FROM vehicles WHERE user_id=?", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#3)")
 
     # ! this is dumb, new users does not have a car.
     # if not vehicles:
@@ -118,7 +119,7 @@ def index():
             "WHERE refuels.user_id=? "
             "ORDER BY refuels.date DESC LIMIT 3;", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#4)")
 
     # length of refuels to show/hide tables (most recent entries & statistics table)
     ref_len = len(latest_refuels)
@@ -130,7 +131,7 @@ def index():
         vehicles_len = len(db.execute(
             "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#5)")
 
     # query for total distance traveled & total liters & total expenses
     # * FIXED: instead of GROUP BY vehicle_id -> temporarily vehicle_name
@@ -145,7 +146,7 @@ def index():
             "GROUP BY vehicles.id "
             "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-/#6)")
 
     stats_length = len(statistics_db)
 
@@ -164,7 +165,7 @@ def index():
             "HAVING (MAX(distance) - MIN(distance) > 0)) "
             "AS vehicles_traveled", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#7)")
 
     total_expenses = total_expenses_db[0]['sum']
 
@@ -179,7 +180,7 @@ def index():
             "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
             "GROUP BY mon", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#8)")
 
     # ? SQLite version
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", user_id)
@@ -208,11 +209,11 @@ def add_refuel():
     try:
         user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
     except:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+        return errorMsg("Could not retrieve data from the server. Please try again. (r-/-P-#1)")
 
     # extra validation
     if not user_db:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+        return errorMsg("An error has been occured! Please check your credentials. (r-/-P-#2)")
 
     user = user_db[0]
     # ? is there really a need for sending username to jinja
@@ -226,7 +227,7 @@ def add_refuel():
         vehicles = db.execute(
             "SELECT * FROM vehicles WHERE user_id=?", user_id)
     except:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+        return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#3)")
 
     vehicle_names = [vehicle['name'] for vehicle in vehicles]
 
@@ -241,10 +242,12 @@ def add_refuel():
         selected_vehicle_db = db.execute(
             "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
     except:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+        return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#4)")
 
     if not selected_vehicle_db:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+        return errorMsg("Could not retrieve data from the server. "
+                        "Make sure you have a vehicle added on vehicles page. "
+                        "Then please try again later. (r/-P-#5)")
 
     sel_vehicle_id = selected_vehicle_db[0]['id']
 
@@ -303,11 +306,7 @@ def add_refuel():
             "WHERE refuels.user_id=? "
             "ORDER BY refuels.date DESC LIMIT 3;", user_id)
     except:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
-
-    # extra validation
-    if not refuels_upd_db:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+        return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#6)")
 
     # length of updated refuels rows
     ref_len_upd = len(refuels_upd_db)
@@ -319,7 +318,7 @@ def add_refuel():
         vehicles_len_upd = len(db.execute(
             "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r/-P-#7)")
 
     # query updated statistics
     try:
@@ -333,7 +332,7 @@ def add_refuel():
             "GROUP BY vehicles.id "
             "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
     except:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+        return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#8)")
 
     stats_length_upd = len(statistics_db_upd)
 
@@ -352,7 +351,7 @@ def add_refuel():
             "HAVING (MAX(distance) - MIN(distance) > 0)) "
             "AS vehicles_traveled", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r/-P-#9)")
 
     total_expenses = total_expenses_db_upd[0]['sum']
 
@@ -366,11 +365,7 @@ def add_refuel():
             "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
             "GROUP BY mon", user_id)
     except:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
-
-    # extra validation
-    if not chart_db_upd:
-        return errorMsg("Could not retrieve data from the server. Please try again.")
+        return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#10)")
 
     # updated chart's labes & values
     chart_dates_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
@@ -486,6 +481,7 @@ def changePassword():
         except:
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
+        # incase db returns empty list
         if not password_db:
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
@@ -644,7 +640,7 @@ def deleteVehicle(id):
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         if not vehicle_delete_db:
-            return errorMsg("Not found!")
+            return errorMsg("No vehicles found!")
 
         vehicle = vehicle_delete_db[0]['name']
 
@@ -695,7 +691,7 @@ def edit(id):
 
     # ensure refuel submitted was valid
     if not refuel_db:
-        return errorMsg("Not found!")
+        return errorMsg("Refuel transaction could not be found!")
 
     # set default value of date input to now
     # date_db = db.execute("SELECT TIMESTAMP WITH TIME ZONE 'NOW'")
@@ -817,7 +813,7 @@ def editVehicle(id):
 
     # user musn't reach ids that aren't his/her, by changing the URL manually
     if not vehicle_db:
-        return errorMsg("Not found!")
+        return errorMsg("Vehicle could not be found! Please try again later :(")
 
     # current name of the vehicle, user might keep the name, this is used in name check below
     current_vehicle_name = vehicle_db[0]['name']
@@ -1012,13 +1008,10 @@ def login():
             users_db = db.execute("SELECT * FROM users WHERE username = ?",
                                   request.form.get("username"))
         except:
-            return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
-        if not users_db:
-            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+            return errorMsg("Could not retrieve data from server. Please refresh the page. (r-login-#1)")
 
         # Ensure username exists and password is correct
-        if not len(users_db) == 1 or not check_password_hash(users_db[0]["hash"], request.form.get("password")):
+        if not users_db or not len(users_db) == 1 or not check_password_hash(users_db[0]["hash"], request.form.get("password")):
             return errorMsg("Invalid username/password")
 
         # Remember which user has logged in
