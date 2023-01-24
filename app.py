@@ -812,8 +812,10 @@ def editVehicle(id):
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # user musn't reach ids that aren't his/her, by changing the URL manually
+    # vehicle_db will return null if user tries to reach someone else's vehicle
+    # and this error will show on the screen
     if not vehicle_db:
-        return errorMsg("Vehicle could not be found! Please try again later :(")
+        return errorMsg("Vehicle could not be found in your list! :(")
 
     # current name of the vehicle, user might keep the name, this is used in name check below
     current_vehicle_name = vehicle_db[0]['name']
@@ -823,9 +825,6 @@ def editVehicle(id):
         user_vehicles_db = db.execute(
             "SELECT * FROM vehicles WHERE user_id=?", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
-
-    if not user_vehicles_db:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if request.method == "GET":
@@ -896,7 +895,7 @@ def history():
         return errorMsg("Could not receieve data from server. Please refresh the page.")
 
     if not user_db:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve user data from server. Please refresh the page.")
 
     user = user_db[0]
 
@@ -1073,10 +1072,10 @@ def signup():
         try:
             users_db = db.execute("SELECT * FROM users")
         except:
-            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+            return errorMsg("Could not retrieve data from server. Please refresh the page. (r-signup-#1)")
 
         if not users_db:
-            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+            return errorMsg("Could not retrieve data from server. Please refresh the page. (r-signup-#2)")
 
         # ensure username does not exist
         for user in users_db:
@@ -1090,10 +1089,10 @@ def signup():
         try:
             register_date_db = db.execute("SELECT NOW()")
         except:
-            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+            return errorMsg("Could not retrieve data from server. Please refresh the page. (r-signup-#3)")
 
         if not register_date_db:
-            return errorMsg("Could not retrieve data from server. Please refresh the page.")
+            return errorMsg("Could not access date field. Please refresh the page. (r-signup-#4)")
 
         register_date = register_date_db[0]["now"]
 
@@ -1102,7 +1101,7 @@ def signup():
             new_user_id = db.execute(
                 "INSERT INTO users (username, hash, register_date) VALUES(?, ?, ?)", username, hash, register_date)
         except:
-            return errorMsg("Ooops! An error has been occured!")
+            return errorMsg("Ooops! An error has been occured! (r-signup-#5)")
 
         # Log the user in
         session["user_id"] = new_user_id
@@ -1131,7 +1130,7 @@ def vehicles():
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if not user_db:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve user data from server. Please try again later :(")
 
     user = user_db[0]
 
@@ -1178,8 +1177,9 @@ def vehicles():
             return errorMsg("Vehicle name can not end with space character(s)")
 
         # ! check if this works fine
+        # ? may be same veh. name should be allowed if
         # check if vehicle name already exist for the same user
-        if len(vehicles_db) > 1:
+        if len(vehicles_db) > 0:
             for i in range(len(vehicles_db)):
                 if vehicles_db[i]["name"] == vehicle_name:
                     return errorMsg("Vehicle's name must be unique!")
