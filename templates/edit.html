@@ -38,6 +38,7 @@ Edit Refuel Transaction
         <!-- for backend -->
         <input class="form-control mx-auto w-sm-92" type="text" name="datetime" id="edit-date" value="{{ date }}"
             style="display: none;" />
+        <!--  -->
 
         <div class="my-3">
             <label class="form-label text-light text-start" for="distance">Odometer reading</label>
@@ -54,6 +55,10 @@ Edit Refuel Transaction
             <input class="form-control mx-auto w-sm-92" type="number" min="0" step="any" name="price"
                 value="{{refuel['price']}}" required id="price">
         </div>
+        <!-- for backend -->
+        <input class="form-control mx-auto w-sm-92" type="text" name="referrer" id="referrer" value="{{ referrer }}"
+            style="display: none;" />
+        <!--  -->
 
     </div>
     <!-- </div> -->

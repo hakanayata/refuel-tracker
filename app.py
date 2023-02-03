@@ -53,6 +53,9 @@ db = SQL(uri)
 # X todo: set default units to EUR and lt
 # X todo: if vehicles >= 2, make seperate tables for each vehicle on history page?
 # X todo: add grand total row to the stats table on home page for users who have multiple vehicles.
+# todo: add js validation to change password page
+# todo: edit page: if user comes from history page, they should be redirected to the history page after editing
+# todo: edit page: add cancel button to go back
 # todo: refuels table, change distance -> odometer
 # todo: history page: show individual grand total row for each vehicle table.
 
@@ -674,6 +677,9 @@ def deleteVehicle(id):
 @login_required
 def edit(id):
     """Edits an entry with a certain id"""
+    # todo: what router user coming from?
+    referrer = request.headers.get("Referer")
+
     user_id = session["user_id"]
 
     # retrieve user's refuel row from database
@@ -721,7 +727,7 @@ def edit(id):
             vehicles_list.append(vehicle['name'])
 
     if request.method == "GET":
-        return render_template("edit.html", refuel=refuel_db[0], date=date, id=id, vehicles=vehicles_list, veh_len=vehicle_len)
+        return render_template("edit.html", refuel=refuel_db[0], date=date, id=id, vehicles=vehicles_list, veh_len=vehicle_len, referrer=referrer)
 
     elif request.method == "POST":
 
@@ -791,9 +797,15 @@ def edit(id):
             except:
                 return errorMsg("Ooops! An error has been occured :(")
 
+        # user's previous route
+        previous_route = request.form.get("referrer")
+
         flash("Entry has been updated succesfully!")
 
-        return redirect("/")
+        if "history" in previous_route:
+            return redirect("/history")
+        else:
+            return redirect("/")
 
     else:
         return errorMsg("Method not allowed!")
