@@ -53,10 +53,10 @@ db = SQL(uri)
 # X todo: set default units to EUR and lt
 # X todo: if vehicles >= 2, make seperate tables for each vehicle on history page?
 # X todo: add grand total row to the stats table on home page for users who have multiple vehicles.
-# todo: add js validation to change password page
-# todo: edit page: if user comes from history page, they should be redirected to the history page after editing
+# x todo: edit page: if user comes from history page, they should be redirected to the history page after editing
+# x todo: add js validation on change-password, change-username pages
 # todo: edit page: add cancel button to go back
-# todo: refuels table, change distance -> odometer
+# todo: database: refuels table, change distance -> odometer
 # todo: history page: show individual grand total row for each vehicle table.
 
 # ! add minlength and maxlength to password fields on html pages.
@@ -521,7 +521,7 @@ def changePassword():
 
         # old pass should match pass from db
         if not check_password_hash(old_hash, old_password):
-            return errorMsg("Invalid old password!")
+            return errorMsg("Incorrect old password!")
 
         new_hash = generate_password_hash(new_password)
 

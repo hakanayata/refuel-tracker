@@ -1,4 +1,4 @@
-const username = document.getElementById("username")
+const old_password = document.getElementById("old-password")
 const password = document.getElementById("password")
 const confirmation = document.getElementById("confirmation")
 const form = document.getElementById("form")
@@ -10,13 +10,14 @@ document.addEventListener("DOMContentLoaded", () => {
         let errorMessages = []
         const pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*_=+-.]).{8,20}$"
 
-        if (username.value === '' || username.value == null) {
-            errorMessages.push("Must provide username!")
+        if (old_password.value === '' || old_password.value == null) {
+            errorMessages.push("Must provide old password!")
         }
 
         if (password.value === '' || password.value == null) {
             errorMessages.push("Must provide password!")
         }
+
 
         if (password.value.length < 8) {
             errorMessages.push("Password must contain at least 8 characters!")
@@ -43,4 +44,3 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
 })
-
