@@ -2,7 +2,7 @@
 ### A web-based application helping users to keep track of their fuel consumption
 #### Harvard CS50: Introduction to Computer Science - Final Project
 ##### Watch demo: [YouTube](https://youtu.be/LfjeUgx_3V4)
-###### The App can be found at: [Refuel Tracker](https://refuel-tracker.hakanayata.com/login)
+##### The App can be found at: [Refuel Tracker](https://refuel-tracker.hakanayata.com/login)
 
 ## Description: Web-based app built with python, js, and bootstrap
 
@@ -31,18 +31,18 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
   - edit an entry
   - delete an entry
   - save the table as pdf with a click of a button
-  - view a chart showing fuel expenses for each month of the current year
+  - view a chart showing fuel expenses for the last 12 months
   
 
 
 ## Languages & Tools
 
-- Python 3.10.7
+- Python 3.11
 - Flask 2.2
 - Jinja 3.1
 - HTML
 - CSS
-- Bootstrap
+- Bootstrap 5.3.0
 - Javascript
 - SQLite3
 - DB Browser for SQLite3
@@ -52,22 +52,21 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
 
 ## Potential Improvements To Do :crossed_fingers:
 - Adding some visual features: light/dark mode, animations
-- Implementing Face ID/Touch ID on login page
-- Allowing users to import an existing table and start adding new entries on top of that table. 
-- Using a more advanced database management system other than SQLite.
+- Integrating Google and Apple Sign-In to the application
+- Allowing users to give access to other users to their vehicles so that vehicles' data can be viewed and edited for multiple users.
 - Making use of Javascript's `navigator.geolocation.getCurrentPosition() ` function and adding a Location field to the table, allowing users to add location to their refuel transaction.
 
 
 ## Credits
 - `@login_required` decorator, `login()`, `logout()` functions, and with some modifications, `errorMsg()` function utilized in this project were actually from CS50 Finance Project prepared by Harvard CS50 staff.
 
-###### Feedback
-You might be able to test this application at: refuel-tracker.hakanayata.com
+## Feedback
+You might be able to test this application at: [refuel-tracker.hakanayata.com](https://refuel-tracker.hakanayata.com).
 I would appreciate any kind of feedback. (See ***Contact*** below)
 
 
 ## Contact
-I'm [Hakan](https://hakanayata.com). You could reach me at ayata.s.hakan@gmail.com
+I'm [Hakan](https://hakanayata.com). You could reach me at info@hakanayata.com
 
 
 
