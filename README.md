@@ -13,12 +13,15 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
 ## Features
 
 - a **signup page** that allows new users to register
+
+
   ![Signup Page](static/gifs/refuel-tracker-signup.gif)
   
 <br>
 
 - a **login page** that allows users to log in
-![Login](static/gifs/refuel-tracker-login.gif)
+
+  ![Login](static/gifs/refuel-tracker-login.gif)
 
 <br>
 
