@@ -13,28 +13,54 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
 ## Features
 
 - a **signup page** that allows new users to register
+  ![Signup Page](static/gifs/refuel-tracker-signup.gif)
+  
+<br>
+
 - a **login page** that allows users to log in
-- an **account dropdown menu** that allow users 
-  - to change their username
-  - to change their password
-  - to change their units (currency, distance, volume)
-- a **vehicles** page where users can
-  - add vehicles that they want to keep track of
-  - delete vehicles
-  - edit vehicles' name and license plate number
-  - view vehicles table where total consumption, and total expenses for each vehicle can be seen.
+![Login](static/gifs/refuel-tracker-login.gif)
+
+<br>
+
 - an **index page** that allows users 
-  - to add new fuel purchase details including current odometer reading, refuel volume added, and unit price of the fuel.
+  - to add new fuel purchase details including odometer reading, refuel volume added, and unit price of the fuel.
   - to view their last 3 fuel purchases and other data/statistics that might be useful such as total fuel expenditure in the entire history of purchases
   - to view a chart showing fuel expenses for the last 3 months
+  
+
+  ![Index Page](static/gifs/refuel-tracker-index.gif)
+
+<br>
+
 - a **history page** where users can see every purchase that has been made up to that moment, and let users do the following actions
   - edit an entry
   - delete an entry
   - save the table as pdf with a click of a button
   - view a chart showing fuel expenses for the last 12 months
   
+  ![History Page](static/gifs/refuel-tracker-history.gif)
 
+<br>
 
+- a **vehicles** page where users can
+  - add vehicles that they want to keep track of
+  - delete vehicles
+  - edit vehicles' name and license plate number
+  - view vehicles table where total consumption, and total expenses for each vehicle can be seen.
+
+  ![Vehicles Page](static/gifs/refuel-tracker-vehicles.gif)
+
+<br>
+
+- an **account menu** that allow users 
+  - to change their username
+  - to change their password
+  - to change their units (currency, distance, volume)
+
+  ![Account Settings Page](static/gifs/refuel-tracker-account.gif)
+
+<br>
+  
 ## Languages & Tools
 
 - Python 3.11
@@ -44,11 +70,14 @@ Refuel Tracker App obliges users to keep track of the fuel consumption of their 
 - CSS
 - Bootstrap 5.3.0
 - Javascript
+- PostgreSQL
+- Postico 2
 - SQLite3
 - DB Browser for SQLite3
 - Visual Studio Code
 - Google Colab
 
+<br>
 
 ## Potential Improvements To Do :crossed_fingers:
 - Adding some visual features: light/dark mode, animations

@@ -107,10 +107,6 @@ def index():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#3)")
 
-    # ! this is dumb, new users does not have a car.
-    # if not vehicles:
-    #     return errorMsg("Could not retrieve data from server. Please refresh the page. #4")
-
     # retrieve last 3 entries from refuels table
     try:
         latest_refuels = db.execute(
@@ -373,6 +369,8 @@ def add_refuel():
     # updated chart's labes & values
     chart_dates_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
     chart_prices_upd = [x["total_price"] for x in chart_db_upd]
+
+    flash("Transaction has been added!")
 
     return render_template("index.html", vehicles=vehicles, refuels=refuels_upd_db, ref_len=ref_len_upd, veh_len=vehicles_len_upd, chart_dates=chart_dates_upd, chart_prices=chart_prices_upd, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, stats=statistics_db_upd, stats_length=stats_length_upd, total_expenses=total_expenses)
 
