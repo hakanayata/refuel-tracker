@@ -1,12 +1,9 @@
-from crypt import methods
 import os
-import datetime
-import re
+from datetime import datetime
 
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session, Request, Response, url_for
+from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
-from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import errorMsg, login_required, cur, avr, validate_password, dist, vol, get_currency_symbol
@@ -33,10 +30,16 @@ Session(app)
 # database replaced from local
 # db = SQL("sqlite:///refueltracker.db")
 # to heroku
-uri = os.getenv("DATABASE_URL")
-if uri.startswith("postgres://"):
-    uri = uri.replace("postgres://", "postgresql://")
-db = SQL(uri)
+# uri = os.getenv("DATABASE_URL")
+# if uri.startswith("postgres://"):
+#     uri = uri.replace("postgres://", "postgresql://")
+# db = SQL(uri)
+# and to MySQL -> db = SQL("mysql://username:password@host:port/database")
+db_username = os.environ.get("SQL_USERNAME")
+db_password = os.environ.get("SQL_PASSWORD")
+db_name = os.environ.get("SQL_DBNAME")
+db_host = os.environ.get("SQL_HOST")
+db = SQL(f"mysql://{db_username}:{db_password}@{db_host}/{db_name}")
 
 # ***** CONFIGURING ENDS HERE *****
 
@@ -137,7 +140,7 @@ def index():
     try:
         statistics_db = db.execute(
             "SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "SUM(volume) AS liters, SUM(total_price) AS expenses, "
             "vehicles.name AS vehicle_name "
             "FROM refuels "
             "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
@@ -155,7 +158,7 @@ def index():
             "SELECT SUM(expenses) "
             "FROM "
             "(SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "SUM(volume) AS liters, SUM(total_price) AS expenses, "
             "vehicles.name AS vehicle_name "
             "FROM refuels "
             "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
@@ -166,20 +169,33 @@ def index():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#7)")
 
-    total_expenses = total_expenses_db[0]['sum']
+    total_expenses = total_expenses_db[0]['SUM(expenses)']
 
     # query label (show day-month-year) and value (total fuel expense) to show on chart
-    # ? PostgreSQL version
+    # MySQL version
     try:
         chart_db = db.execute(
             "SELECT SUM(total_price) AS total_price, "
-            "date_trunc('month', date::timestamptz) AS mon "
-            "FROM refuels WHERE user_id=? "
-            "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
-            "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+            "DATE_FORMAT(date, '%Y-%m-01') AS mon "
+            "FROM refuels "
+            "WHERE user_id=? "
+            "AND date < NOW() + INTERVAL 1 DAY "
+            "AND date > DATE_FORMAT(NOW() - INTERVAL 2 MONTH, '%Y-%m-01') "
             "GROUP BY mon", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#8)")
+
+    # ? PostgreSQL version
+    # try:
+    #     chart_db = db.execute(
+    #         "SELECT SUM(total_price) AS total_price, "
+    #         "date_trunc('month', date::timestamptz) AS mon "
+    #         "FROM refuels WHERE user_id=? "
+    #         "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+    #         "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+    #         "GROUP BY mon", user_id)
+    # except:
+    #     return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#8)")
 
     # ? SQLite version
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 day')) AND date > (SELECT date('now', 'localtime', '-2 month', 'start of month')) GROUP BY strftime('%m', date)", user_id)
@@ -188,7 +204,11 @@ def index():
     # labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
     #           for x in chart_db]
 
-    chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
+    # Postgres Version
+    # chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
+    # MySQL
+    chart_dates = [datetime.strptime(
+        x['mon'], '%Y-%m-%d').strftime('%m-%Y') for x in chart_db]
     chart_prices = [x["total_price"] for x in chart_db]
 
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
@@ -323,7 +343,7 @@ def add_refuel():
     try:
         statistics_db_upd = db.execute(
             "SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "SUM(volume) AS liters, SUM(total_price) AS expenses, "
             "vehicles.name AS vehicle_name "
             "FROM refuels "
             "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
@@ -341,7 +361,7 @@ def add_refuel():
             "SELECT SUM(expenses) "
             "FROM "
             "(SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM (total_price) AS expenses, "
+            "SUM(volume) AS liters, SUM(total_price) AS expenses, "
             "vehicles.name AS vehicle_name "
             "FROM refuels "
             "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
@@ -352,22 +372,40 @@ def add_refuel():
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/-P-#9)")
 
-    total_expenses = total_expenses_db_upd[0]['sum']
+    total_expenses = total_expenses_db_upd[0]['SUM(expenses)']
 
     # retrieve updated refuels to show on chart
+    # MySQL
     try:
         chart_db_upd = db.execute(
             "SELECT SUM(total_price) AS total_price, "
-            "date_trunc('month', date::timestamptz) AS mon "
+            "DATE_FORMAT(date, '%Y-%m-01') AS mon "
             "FROM refuels "
-            "WHERE user_id=? AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
-            "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+            "WHERE user_id=? "
+            "AND date < NOW() + INTERVAL 1 DAY "
+            "AND date > DATE_FORMAT(NOW() - INTERVAL 2 MONTH, '%Y-%m-01') "
             "GROUP BY mon", user_id)
     except:
-        return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#10)")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-P-#10)")
+    # Postgres version
+    # try:
+    #     chart_db_upd = db.execute(
+    #         "SELECT SUM(total_price) AS total_price, "
+    #         "date_trunc('month', date::timestamptz) AS mon "
+    #         "FROM refuels "
+    #         "WHERE user_id=? "
+    #         "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+    #         "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '2 month')) "
+    #         "GROUP BY mon", user_id)
+    # except:
+    #     return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#10)")
 
     # updated chart's labes & values
-    chart_dates_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
+    # MySQL
+    chart_dates_upd = [datetime.strptime(
+        x['mon'], '%Y-%m-%d').strftime('%m-%Y') for x in chart_db_upd]
+    # Postgres version
+    # chart_dates_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
     chart_prices_upd = [x["total_price"] for x in chart_db_upd]
 
     flash("Transaction has been added!")
@@ -961,17 +999,26 @@ def history():
     try:
         chart_db = db.execute(
             "SELECT SUM(total_price) AS total_price, "
-            "date_trunc('month', date::timestamptz) AS mon "
+            "DATE_FORMAT(date, '%Y-%m-01') AS mon "
             "FROM refuels "
             "WHERE user_id=? "
-            "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
-            "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) "
+            "AND date < NOW() + INTERVAL 1 DAY "
+            "AND date > DATE_FORMAT(NOW() - INTERVAL 11 MONTH, '%Y-%m-01') "
             "GROUP BY mon", user_id)
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r/h-#6)")
 
     # SQLite version (shows current year only)
     # chart_db = db.execute("SELECT SUM(total_price) AS total_price, date FROM refuels WHERE user_id=? AND date < (SELECT date('now', 'localtime', '+1 year', 'start of year')) AND date > (SELECT date('now', 'localtime', 'start of year', '-1 day')) GROUP BY strftime('%m', date)", session["user_id"])
+    # PostgreSQL version (shows last 12 months)
+        # chart_db = db.execute(
+        # "SELECT SUM(total_price) AS total_price, "
+        # "date_trunc('month', date::timestamptz) AS mon "
+        # "FROM refuels "
+        # "WHERE user_id=? "
+        # "AND date::timestamptz < (SELECT NOW() + INTERVAL '1 day') "
+        # "AND date::timestamptz > (SELECT date_trunc('month', NOW() - INTERVAL '11 month')) "
+        # "GROUP BY mon", user_id)
 
     # pick month part from the string to show as label of the chart
     # labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
@@ -979,7 +1026,11 @@ def history():
     chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
 
     # total expense for that specific month
-    chart_prices = [x["total_price"] for x in chart_db]
+    # MySQL
+    chart_dates = [datetime.strptime(
+        x['mon'], '%Y-%m-%d').strftime('%m-%Y') for x in chart_db]
+    # Postgres
+    # chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
 
     # length of refuel transactions
     try:
@@ -1097,7 +1148,7 @@ def signup():
 
         # add register date to table
         try:
-            register_date_db = db.execute("SELECT NOW()")
+            register_date_db = db.execute("SELECT NOW() AS now")
         except:
             return errorMsg("Could not retrieve data from server. Please refresh the page. (r-signup-#3)")
 
@@ -1205,7 +1256,7 @@ def vehicles():
             return errorMsg("Vehicle name can not end with space character(s)")
 
         # retrieve current local date & time
-        date_db = db.execute("SELECT NOW()")
+        date_db = db.execute("SELECT NOW() AS now")
         date = date_db[0]["now"]
 
         # add new vehicle to the vehicles table
