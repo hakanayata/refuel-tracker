@@ -1023,14 +1023,15 @@ def history():
     # pick month part from the string to show as label of the chart
     # labels = [months[int(x["mon"].strftime('%Y-%m-%d')[5:7]) - 1]
     #           for x in chart_db]
-    chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
 
-    # total expense for that specific month
     # MySQL
     chart_dates = [datetime.strptime(
         x['mon'], '%Y-%m-%d').strftime('%m-%Y') for x in chart_db]
     # Postgres
     # chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
+
+    # total expense for that specific month
+    chart_prices = [x["total_price"] for x in chart_db]
 
     # length of refuel transactions
     try:
