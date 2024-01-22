@@ -60,6 +60,7 @@ db = SQL(f"mysql://{db_username}:{db_password}@{db_host}/{db_name}")
 # x todo: add js validation on change-password, change-username pages
 # todo: edit page: add cancel button to go back
 # todo: database: refuels table, change distance -> odometer
+# todo: history page: add pagination
 # todo: history page: show individual grand total row for each vehicle table.
 
 # ! add minlength and maxlength to password fields on html pages.
