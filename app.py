@@ -8,8 +8,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import errorMsg, login_required, cur, avr, validate_password, dist, vol, get_currency_symbol
 
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import create_engine, Column, ForeignKey, Integer, String, DateTime
+
 # Configure application
 app = Flask(__name__)
+
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -39,7 +44,64 @@ db_username = os.environ.get("SQL_USERNAME")
 db_password = os.environ.get("SQL_PASSWORD")
 db_name = os.environ.get("SQL_DBNAME")
 db_host = os.environ.get("SQL_HOST")
-db = SQL(f"mysql://{db_username}:{db_password}@{db_host}/{db_name}")
+db_port = os.environ.get("SQL_PORT")
+# Python Anywhere
+# db = SQL(f"mysql://{db_username}:{db_password}@{db_host}/{db_name}")
+
+print(f"mysql://{db_username}:{db_password}@{db_host}/{db_name}")
+
+# db
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
+
+
+# class Base(DeclarativeBase):
+#     pass
+
+
+db = SQLAlchemy(app)
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(255), nullable=False)
+    hash = db.Column(db.Text, nullable=False)
+    currency = db.Column(db.String(10), default='EUR - €', nullable=False)
+    distance_unit = db.Column(db.String(10), default='km', nullable=False)
+    volume_unit = db.Column(db.String(10), default='lt', nullable=False)
+    register_date = db.Column(
+        db.TIMESTAMP, default=db.func.current_timestamp(), nullable=False)
+
+
+class Vehicle(db.Model):
+    __tablename__ = 'vehicles'
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(255), nullable=False)
+    license_plate = db.Column(db.String(255))
+    date = db.Column(
+        db.TIMESTAMP, default=db.func.current_timestamp(), nullable=False)
+    user_id = db.Column(db.BigInteger, db.ForeignKey('users.id'))
+    user = db.relationship('User', backref=db.backref('vehicles', lazy=True))
+
+
+class Refuel(db.Model):
+    __tablename__ = 'refuels'
+    id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
+    date = db.Column(db.TIMESTAMP, nullable=False)
+    distance = db.Column(db.BigInteger, default=0, nullable=False)
+    volume = db.Column(db.Float, default=0, nullable=False)
+    price = db.Column(db.Float, default=0, nullable=False)
+    total_price = db.Column(db.Float, default=0, nullable=False)
+    user_id = db.Column(db.BigInteger, db.ForeignKey('users.id'))
+    user = db.relationship('User', backref=db.backref('refuels', lazy=True))
+    vehicle_id = db.Column(db.BigInteger, db.ForeignKey('vehicles.id'))
+    vehicle = db.relationship(
+        'Vehicle', backref=db.backref('refuels', lazy=True))
+
+
+with app.app_context():
+    db.create_all()
+
 
 # ***** CONFIGURING ENDS HERE *****
 
@@ -61,6 +123,7 @@ db = SQL(f"mysql://{db_username}:{db_password}@{db_host}/{db_name}")
 # todo: edit page: add cancel button to go back
 # todo: database: refuels table, change distance -> odometer
 # todo: history page: show individual grand total row for each vehicle table.
+# todo: add ORM
 
 # ! add minlength and maxlength to password fields on html pages.
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
@@ -86,8 +149,9 @@ def index():
 
     # retrieve username and unit settings
     try:
-        user_db = db.execute(
-            "SELECT * FROM users WHERE id=?", user_id)
+        user_db = User.query.filter_by(id=user_id).first()
+        # user_db = db.execute(
+        #     "SELECT * FROM users WHERE id=?", user_id)
     except:
         return errorMsg("Couldn't retrieve data from server. Please refresh the page. (r-/-#1)")
 
@@ -95,31 +159,50 @@ def index():
     if not user_db:
         return errorMsg("No such user. Please check your credentials. (r-/-#2)")
 
-    user = user_db[0]
+    # user = user_db[0]
+    user = user_db
 
-    username = user["username"]
+    username = user.username
     # currency_symbol = user["currency"][-1]
-    currency_symbol = get_currency_symbol(user["currency"])
-    distance_unit = user["distance_unit"]
-    volume_unit = user["volume_unit"]
+    currency_symbol = get_currency_symbol(user.currency)
+    distance_unit = user.distance_unit
+    volume_unit = user.volume_unit
 
     # select vehicles to show in dropdown menu
     try:
-        vehicles = db.execute(
-            "SELECT * FROM vehicles WHERE user_id=?", user_id)
+        vehicles = Vehicle.query.filter_by(user_id=user_id)
+        # vehicles = db.execute(
+        #     "SELECT * FROM vehicles WHERE user_id=?", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#3)")
 
     # retrieve last 3 entries from refuels table
     try:
-        latest_refuels = db.execute(
-            "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, "
-            "refuels.price, refuels.total_price, refuels.user_id, "
-            "refuels.vehicle_id, vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "ORDER BY refuels.date DESC LIMIT 3;", user_id)
+        latest_refuels = (db.session.query(
+            Refuel.id,
+            Refuel.date,
+            Refuel.distance,
+            Refuel.volume,
+            Refuel.price,
+            Refuel.total_price,
+            Refuel.user_id,
+            Refuel.vehicle_id,
+            Vehicle.name.label('vehicle_name')
+        )
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id)
+            .order_by(Refuel.date.desc())
+            .limit(3)
+            .all()
+        )
+        # latest_refuels = db.execute(
+        #     "SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, "
+        #     "refuels.price, refuels.total_price, refuels.user_id, "
+        #     "refuels.vehicle_id, vehicles.name AS vehicle_name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        #     "WHERE refuels.user_id=? "
+        #     "ORDER BY refuels.date DESC LIMIT 3;", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#4)")
 
@@ -130,23 +213,40 @@ def index():
     # in order to hide/show tables in case no vehicle exist
     # if there's more than 1 vehicle, show one more column (vehicle name) on table
     try:
-        vehicles_len = len(db.execute(
-            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+        vehicles_len = db.session.query(db.func.count(db.distinct(
+            Refuel.vehicle_id))).filter(Refuel.user_id == user_id).scalar()
+        # vehicles_len = len(db.execute(
+        #     "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#5)")
 
     # query for total distance traveled & total liters & total expenses
     # * FIXED: instead of GROUP BY vehicle_id -> temporarily vehicle_name
     try:
-        statistics_db = db.execute(
-            "SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM(total_price) AS expenses, "
-            "vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "GROUP BY vehicles.id "
-            "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
+        statistics_db = (
+            db.session.query(
+                (db.func.max(Refuel.distance) -
+                 db.func.min(Refuel.distance)).label("distance"),
+                db.func.sum(Refuel.volume).label("liters"),
+                db.func.sum(Refuel.total_price).label("expenses"),
+                Vehicle.name.label("vehicle_name")
+            )
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id)
+            .group_by(Vehicle.id)
+            .having((db.func.max(Refuel.distance) - db.func.min(Refuel.distance)) > 0)
+            .all()
+        )
+
+        # statistics_db = db.execute(
+        #     "SELECT (MAX(distance) - MIN(distance)) AS distance, "
+        #     "SUM(volume) AS liters, SUM(total_price) AS expenses, "
+        #     "vehicles.name AS vehicle_name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        #     "WHERE refuels.user_id=? "
+        #     "GROUP BY vehicles.id "
+        #     "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-/#6)")
 
@@ -154,34 +254,65 @@ def index():
 
     # total expenses from query above
     try:
-        total_expenses_db = db.execute(
-            "SELECT SUM(expenses) "
-            "FROM "
-            "(SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM(total_price) AS expenses, "
-            "vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "GROUP BY vehicles.id "
-            "HAVING (MAX(distance) - MIN(distance) > 0)) "
-            "AS vehicles_traveled", user_id)
+        subquery = (
+            db.session.query(
+                (db.func.max(Refuel.distance) -
+                 db.func.min(Refuel.distance)).label("distance"),
+                db.func.sum(Refuel.volume).label("liters"),
+                db.func.sum(Refuel.total_price).label("expenses")
+            )
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id)
+            .group_by(Vehicle.id)
+            .having((db.func.max(Refuel.distance) - db.func.min(Refuel.distance)) > 0)
+            .subquery()
+        )
+        total_expenses_db = db.session.query(
+            db.func.sum(subquery.c.expenses)
+        ).scalar()
+
+        # total_expenses_db = db.execute(
+        #     "SELECT SUM(expenses) "
+        #     "FROM "
+        #     "(SELECT (MAX(distance) - MIN(distance)) AS distance, "
+        #     "SUM(volume) AS liters, SUM(total_price) AS expenses, "
+        #     "vehicles.name AS vehicle_name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        #     "WHERE refuels.user_id=? "
+        #     "GROUP BY vehicles.id "
+        #     "HAVING (MAX(distance) - MIN(distance) > 0)) "
+        #     "AS vehicles_traveled", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#7)")
 
-    total_expenses = total_expenses_db[0]['SUM(expenses)']
+    total_expenses = total_expenses_db
 
     # query label (show day-month-year) and value (total fuel expense) to show on chart
     # MySQL version
     try:
-        chart_db = db.execute(
-            "SELECT SUM(total_price) AS total_price, "
-            "DATE_FORMAT(date, '%Y-%m-01') AS mon "
-            "FROM refuels "
-            "WHERE user_id=? "
-            "AND date < NOW() + INTERVAL 1 DAY "
-            "AND date > DATE_FORMAT(NOW() - INTERVAL 2 MONTH, '%Y-%m-01') "
-            "GROUP BY mon", user_id)
+        chart_db = (
+            db.session.query(
+                db.func.sum(Refuel.total_price).label("total_price"),
+                db.func.date_format(Refuel.date, "%Y-%m-01").label("mon")
+            )
+            .filter(Refuel.user_id == user_id)
+            .filter(Refuel.date < db.func.now() + db.text("INTERVAL 1 DAY"))
+            .filter(Refuel.date > db.func.date_format(
+                db.func.now() - db.text("INTERVAL 2 MONTH"), "%Y-%m-01"
+            )
+            )
+            .group_by("mon")
+            .all()
+        )
+        # chart_db = db.execute(
+        #     "SELECT SUM(total_price) AS total_price, "
+        #     "DATE_FORMAT(date, '%Y-%m-01') AS mon "
+        #     "FROM refuels "
+        #     "WHERE user_id=? "
+        #     "AND date < NOW() + INTERVAL 1 DAY "
+        #     "AND date > DATE_FORMAT(NOW() - INTERVAL 2 MONTH, '%Y-%m-01') "
+        #     "GROUP BY mon", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#8)")
 
@@ -208,8 +339,8 @@ def index():
     # chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
     # MySQL
     chart_dates = [datetime.strptime(
-        x['mon'], '%Y-%m-%d').strftime('%m-%Y') for x in chart_db]
-    chart_prices = [x["total_price"] for x in chart_db]
+        x.mon, '%Y-%m-%d').strftime('%m-%Y') for x in chart_db]
+    chart_prices = [x.total_price for x in chart_db]
 
     # * GET carries request parameter appended in URL string (req from client to server in HTTP)
     # user reached route via GET, as by clicking a link or via redirect()
@@ -1064,19 +1195,29 @@ def login():
         elif not request.form.get("password"):
             return errorMsg("Type a valid password")
 
+        users = User.query.all()
+        print("•••• ", users)
+        print("•••$$$ ", type(users[0]))
+
+        user1 = User.query.filter_by(
+            username=request.form.get("username")).first()
+        print("••••••• ", user1.username)
+
         # Query database for username
         try:
-            users_db = db.execute("SELECT * FROM users WHERE username = ?",
-                                  request.form.get("username"))
+            users_db = User.query.filter_by(
+                username=request.form.get("username")).first()
+            # users_db = db.execute("SELECT * FROM users WHERE username = ?",
+            #                       request.form.get("username"))
         except:
             return errorMsg("Could not retrieve data from server. Please refresh the page. (r-login-#1)")
 
         # Ensure username exists and password is correct
-        if not users_db or not len(users_db) == 1 or not check_password_hash(users_db[0]["hash"], request.form.get("password")):
+        if not users_db or not check_password_hash(users_db.hash, request.form.get("password")):
             return errorMsg("Invalid username/password")
 
         # Remember which user has logged in
-        session["user_id"] = users_db[0]["id"]
+        session["user_id"] = users_db.id
 
         # Redirect user to home page
         return redirect("/")
