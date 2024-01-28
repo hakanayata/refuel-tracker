@@ -804,31 +804,40 @@ def deleteVehicle(id):
     if request.method == "POST":
 
         try:
-            vehicle_delete_db = db.execute(
-                "SELECT * FROM vehicles WHERE user_id=? AND id=?", session["user_id"], id)
+            vehicle_delete_db = Vehicle.query.filter_by(
+                user_id=session["user_id"], id=id).first()
+            # vehicle_delete_db = db.execute(
+            #     "SELECT * FROM vehicles WHERE user_id=? AND id=?", session["user_id"], id)
         except:
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         if not vehicle_delete_db:
             return errorMsg("No vehicles found!")
 
-        vehicle = vehicle_delete_db[0]['name']
+        vehicle = vehicle_delete_db.name
 
         # delete refuels first
         try:
-            rows = db.execute("SELECT * FROM refuels WHERE vehicle_id=?", id)
+            rows = Refuel.query.filter_by(vehicle_id=id).all()
+            # rows = db.execute("SELECT * FROM refuels WHERE vehicle_id=?", id)
         except:
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         if len(rows) > 0:
             try:
-                db.execute("DELETE FROM refuels WHERE vehicle_id=?", id)
+                db.session.query(Refuel).filter(
+                    Refuel.vehicle_id == id).delete()
+                # db.execute("DELETE FROM refuels WHERE vehicle_id=?", id)
+                db.session.commit()
             except:
                 return errorMsg("Ooops! An error has been occured while deleting from refuels table :( ")
 
         # delete vehicle
         try:
-            db.execute("DELETE FROM vehicles WHERE id=?", id)
+            db.session.delete(vehicle_delete_db)
+            # db.session.query(Vehicle).filter(id == id).delete()
+            db.session.commit()
+            # db.execute("DELETE FROM vehicles WHERE id=?", id)
         except:
             return errorMsg("Ooops! An error has been occured while deleting from vehicles table :(")
 
@@ -1328,30 +1337,45 @@ def vehicles():
 
     # query user's unit settings
     try:
-        user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
+        user_db = User.query.filter_by(id=user_id).first()
+        # user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if not user_db:
         return errorMsg("Could not retrieve user data from server. Please try again later :(")
 
-    user = user_db[0]
+    user = user_db
 
     # currency_symbol = user["currency"][-1]
-    currency_symbol = get_currency_symbol(user["currency"])
-    distance_unit = user["distance_unit"]
-    volume_unit = user["volume_unit"]
+    currency_symbol = get_currency_symbol(user.currency)
+    distance_unit = user.distance_unit
+    volume_unit = user.volume_unit
 
     # retrieve total volume of refuels, total cost of refuels from vehicles table
     try:
-        vehicles_db = db.execute(
-            "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
-            "SUM(volume) AS liters, SUM(total_price) AS expenses "
-            "FROM vehicles "
-            "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
-            "WHERE vehicles.user_id=? "
-            "GROUP BY vehicles.id "
-            "ORDER BY vehicles.id", user_id)
+        vehicles_db = (
+            db.session.query(
+                Vehicle.id,
+                Vehicle.name,
+                Vehicle.license_plate,
+                db.func.sum(Refuel.volume).label("liters"),
+                db.func.sum(Refuel.total_price).label("expenses")
+            )
+            .outerjoin(Refuel, Vehicle.id == Refuel.vehicle_id)
+            .filter(Vehicle.user_id == user_id)
+            .group_by(Vehicle.id)
+            .order_by(Vehicle.id)
+            .all()
+        )
+        # vehicles_db = db.execute(
+        #     "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
+        #     "SUM(volume) AS liters, SUM(total_price) AS expenses "
+        #     "FROM vehicles "
+        #     "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
+        #     "WHERE vehicles.user_id=? "
+        #     "GROUP BY vehicles.id "
+        #     "ORDER BY vehicles.id", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
     # vehicles_db = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
@@ -1384,7 +1408,7 @@ def vehicles():
         # check if vehicle name already exist for the same user
         if len(vehicles_db) > 0:
             for i in range(len(vehicles_db)):
-                if vehicles_db[i]["name"] == vehicle_name:
+                if vehicles_db[i].name == vehicle_name:
                     return errorMsg("Vehicle's name must be unique!")
 
         # license plate number submitted by user
@@ -1398,26 +1422,49 @@ def vehicles():
             return errorMsg("Vehicle name can not end with space character(s)")
 
         # retrieve current local date & time
-        date_db = db.execute("SELECT NOW() AS now")
-        date = date_db[0]["now"]
+        # date_db = db.execute("SELECT NOW() AS now")
+        date_db = db.session.query(db.func.now().label("now")).first()
+        date = date_db.now
 
         # add new vehicle to the vehicles table
         try:
-            db.execute("INSERT INTO vehicles (name, license_plate, date, user_id) VALUES(?, ?, ?, ?)",
-                       vehicle_name, license_plate, date, user_id)
+            new_vehicle = Vehicle(
+                name=vehicle_name,
+                license_plate=license_plate,
+                date=date,
+                user_id=user_id
+            )
+            # db.execute("INSERT INTO vehicles (name, license_plate, date, user_id) VALUES(?, ?, ?, ?)",
+            #            vehicle_name, license_plate, date, user_id)
+            db.session.add(new_vehicle)
+            db.session.commit()
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
         # select updated version of data
         try:
-            vehicles_db_uptd = db.execute(
-                "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
-                "SUM(volume) AS liters, SUM(total_price) AS expenses "
-                "FROM vehicles "
-                "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
-                "WHERE vehicles.user_id=? "
-                "GROUP BY vehicles.id "
-                "ORDER BY vehicles.id", user_id)
+            vehicles_db_uptd = (
+                db.session.query(
+                    Vehicle.id,
+                    Vehicle.name,
+                    Vehicle.license_plate,
+                    db.func.sum(Refuel.volume).label("liters"),
+                    db.func.sum(Refuel.total_price).label("expenses")
+                )
+                .outerjoin(Refuel, Vehicle.id == Refuel.vehicle_id)
+                .filter(Vehicle.user_id == user_id)
+                .group_by(Vehicle.id)
+                .order_by(Vehicle.id)
+                .all()
+            )
+            # vehicles_db_uptd = db.execute(
+            #     "SELECT vehicles.id, vehicles.name, vehicles.license_plate, "
+            #     "SUM(volume) AS liters, SUM(total_price) AS expenses "
+            #     "FROM vehicles "
+            #     "LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id "
+            #     "WHERE vehicles.user_id=? "
+            #     "GROUP BY vehicles.id "
+            #     "ORDER BY vehicles.id", user_id)
         except:
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
         # vehicles_db_uptd = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
