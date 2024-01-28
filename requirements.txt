@@ -6,7 +6,7 @@ gunicorn
 # psycopg2
 requests
 # ! mysqlclient errors
-# mysqlclient
+mysqlclient
 # SQLAlchemy
 Flask-SQLAlchemy
 python-dotenv
