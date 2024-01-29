@@ -299,7 +299,7 @@ def index():
             .filter(Refuel.user_id == user_id)
             .filter(Refuel.date < db.func.now() + db.text("INTERVAL 1 DAY"))
             .filter(Refuel.date > db.func.date_format(
-                db.func.now() - db.text("INTERVAL 2 MONTH"), "%Y-%m-01"
+                db.func.now() - db.text("INTERVAL 3 MONTH"), "%Y-%m-01"
             )
             )
             .group_by("mon")
@@ -1077,31 +1077,48 @@ def history():
 
     # query user's unit settings
     try:
-        user_db = db.execute(
-            "SELECT * FROM users WHERE id=?", user_id)
+        user_db = User.query.filter_by(id=user_id).first()
+        # user_db = db.execute(
+        #     "SELECT * FROM users WHERE id=?", user_id)
     except RuntimeError:
         return errorMsg("Could not receieve data from server. Please refresh the page.")
 
     if not user_db:
         return errorMsg("Could not retrieve user data from server. Please refresh the page.")
 
-    user = user_db[0]
+    user = user_db
 
     # currency_symbol = user["currency"][-1]
-    currency_symbol = get_currency_symbol(user["currency"])
-    distance_unit = user["distance_unit"]
-    volume_unit = user["volume_unit"]
+    currency_symbol = get_currency_symbol(user.currency)
+    distance_unit = user.distance_unit
+    volume_unit = user.volume_unit
 
     # query all transactions
     try:
-        refuels_db = db.execute(
-            "SELECT refuels.id, refuels.date, refuels.distance, "
-            "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
-            "refuels.vehicle_id, vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "ORDER BY vehicles.id ASC, refuels.date DESC", user_id)
+        refuels_db = (db.session.query(
+            Refuel.id,
+            Refuel.date,
+            Refuel.distance,
+            Refuel.volume,
+            Refuel.price,
+            Refuel.total_price,
+            Refuel.user_id,
+            Refuel.vehicle_id,
+            Vehicle.name.label('vehicle_name')
+        )
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id)
+            .order_by(Refuel.date.desc())
+            .all()
+        )
+        # refuels_db = db.execute(
+        #     "SELECT refuels.id, refuels.date, refuels.distance, "
+        #     "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
+        #     "refuels.vehicle_id, vehicles.name AS vehicle_name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        #     "WHERE refuels.user_id=? "
+        #     "ORDER BY vehicles.id ASC, refuels.date DESC", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
@@ -1110,41 +1127,67 @@ def history():
 
     # todo: list of vehicles that has transaction(s)
     try:
-        vehicles_refuelled = db.execute(
-            "SELECT DISTINCT vehicle_id, name "
-            "FROM "
-            "(SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, "
-            "refuels.price, refuels.total_price, refuels.user_id, "
-            "refuels.vehicle_id, vehicles.name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id=vehicles.id "
-            "WHERE refuels.user_id=?) AS vehicles_refuelled "
-            "ORDER BY vehicle_id", user_id)
+        vehicles_refuelled = (db.session.query(
+            db.distinct(Refuel.vehicle_id).label("vehicle_id"), Vehicle.name)
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id)
+            .order_by("vehicle_id")
+            .all()
+        )
+        # vehicles_refuelled = db.execute(
+        #     "SELECT DISTINCT vehicle_id, name "
+        #     "FROM "
+        #     "(SELECT refuels.id, refuels.date, refuels.distance, refuels.volume, "
+        #     "refuels.price, refuels.total_price, refuels.user_id, "
+        #     "refuels.vehicle_id, vehicles.name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id=vehicles.id "
+        #     "WHERE refuels.user_id=?) AS vehicles_refuelled "
+        #     "ORDER BY vehicle_id", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # retrieve grand total of total price column
     try:
-        sum_expense_db = db.execute(
-            "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", user_id)
+        sum_expense_db = (db.session.query(
+            db.func.sum(Refuel.total_price).label("grand_total"))
+            .filter(Refuel.user_id == user_id)
+            .first()
+        )
+        # sum_expense_db = db.execute(
+        #     "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # grand total
-    sum_expense = sum_expense_db[0]["grand_total"]
+    sum_expense = sum_expense_db.grand_total
 
     # sum (group) each month's transactions for more concise/clean chart
 
     # PostgreSQL version (shows last 12 months)
     try:
-        chart_db = db.execute(
-            "SELECT SUM(total_price) AS total_price, "
-            "DATE_FORMAT(date, '%Y-%m-01') AS mon "
-            "FROM refuels "
-            "WHERE user_id=? "
-            "AND date < NOW() + INTERVAL 1 DAY "
-            "AND date > DATE_FORMAT(NOW() - INTERVAL 11 MONTH, '%Y-%m-01') "
-            "GROUP BY mon", user_id)
+        chart_db = (
+            db.session.query(
+                db.func.sum(Refuel.total_price).label("total_price"),
+                db.func.date_format(Refuel.date, "%Y-%m-01").label("mon")
+            )
+            .filter(Refuel.user_id == user_id)
+            .filter(Refuel.date < db.func.now() + db.text("INTERVAL 1 DAY"))
+            .filter(Refuel.date > db.func.date_format(
+                db.func.now() - db.text("INTERVAL 12 MONTH"), "%Y-%m-01"
+            )
+            )
+            .group_by("mon")
+            .all()
+        )
+        # chart_db = db.execute(
+        #     "SELECT SUM(total_price) AS total_price, "
+        #     "DATE_FORMAT(date, '%Y-%m-01') AS mon "
+        #     "FROM refuels "
+        #     "WHERE user_id=? "
+        #     "AND date < NOW() + INTERVAL 1 DAY "
+        #     "AND date > DATE_FORMAT(NOW() - INTERVAL 12 MONTH, '%Y-%m-01') "
+        #     "GROUP BY mon", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/h-#6)")
 
@@ -1166,19 +1209,22 @@ def history():
 
     # MySQL
     chart_dates = [datetime.strptime(
-        x['mon'], '%Y-%m-%d').strftime('%m-%Y') for x in chart_db]
+        x.mon, '%Y-%m-%d').strftime('%m-%Y') for x in chart_db]
     # Postgres
     # chart_dates = [x["mon"].strftime('%m-%Y') for x in chart_db]
 
     # total expense for that specific month
-    chart_prices = [x["total_price"] for x in chart_db]
+    chart_prices = [x.total_price for x in chart_db]
 
     # length of refuel transactions
     try:
-        vehicles_len = len(db.execute(
-            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+        vehicles_len = db.session.query(db.func.count(db.distinct(
+            Refuel.vehicle_id
+        ))).filter(Refuel.user_id == user_id).scalar()
+        # vehicles_len = len(db.execute(
+        #     "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
     except:
-        return errorMsg("Could not retrieve data from server. Please refresh the page.")
+        return errorMsg("Could not retrieve data from server. Please refresh the page. (r/h-#7)")
 
     if request.method == "GET":
         return render_template("history.html", refuels=refuels_db, ref_len=ref_len, veh_len=vehicles_len, chart_dates=chart_dates, chart_prices=chart_prices, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit, total_expenses=sum_expense, vehicles_refuelled=vehicles_refuelled)
