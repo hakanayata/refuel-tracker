@@ -648,19 +648,25 @@ def changeCur():
 
     # user's unit settings
     try:
-        user_units_db = db.execute(
-            "SELECT currency, distance_unit, volume_unit FROM users WHERE id=?", user_id)
+        user_units_db = (
+            db.session.query(
+                User.currency, User.distance_unit, User.volume_unit)
+            .filter_by(id=user_id)
+            .first()
+        )
+        # user_units_db = db.execute(
+        #     "SELECT currency, distance_unit, volume_unit FROM users WHERE id=?", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if not user_units_db:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    user_units = user_units_db[0]
+    user_units = user_units_db
 
-    user_currency = user_units["currency"]
-    user_distance_unit = user_units["distance_unit"]
-    user_volume_unit = user_units["volume_unit"]
+    user_currency = user_units.currency
+    user_distance_unit = user_units.distance_unit
+    user_volume_unit = user_units.volume_unit
 
     other_currencies = []
     for currency in currencies:
@@ -699,8 +705,16 @@ def changeCur():
 
         # update new setting in database
         try:
-            db.execute("UPDATE users SET currency=?, distance_unit=?, volume_unit=? WHERE id=?",
-                       selected_currency, selected_distance_unit, selected_volume_unit, user_id)
+            db.session.query(User).filter_by(id=user_id).update(
+                {
+                    'currency': selected_currency,
+                    'distance_unit': selected_distance_unit,
+                    'volume_unit': selected_volume_unit
+                }
+            )
+            db.session.commit()
+            # db.execute("UPDATE users SET currency=?, distance_unit=?, volume_unit=? WHERE id=?",
+            #            selected_currency, selected_distance_unit, selected_volume_unit, user_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
