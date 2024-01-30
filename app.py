@@ -48,15 +48,8 @@ db_port = os.environ.get("SQL_PORT")
 # Python Anywhere
 # db = SQL(f"mysql://{db_username}:{db_password}@{db_host}/{db_name}")
 
-print(f"mysql://{db_username}:{db_password}@{db_host}/{db_name}")
-
 # db
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{db_username}:{db_password}@{db_host}:{db_port}/{db_name}"
-
-
-# class Base(DeclarativeBase):
-#     pass
-
 
 db = SQLAlchemy(app)
 
@@ -299,7 +292,7 @@ def index():
             .filter(Refuel.user_id == user_id)
             .filter(Refuel.date < db.func.now() + db.text("INTERVAL 1 DAY"))
             .filter(Refuel.date > db.func.date_format(
-                db.func.now() - db.text("INTERVAL 3 MONTH"), "%Y-%m-01"
+                db.func.now() - db.text("INTERVAL 2 MONTH"), "%Y-%m-01"
             )
             )
             .group_by("mon")
@@ -357,7 +350,8 @@ def add_refuel():
     user_id = session["user_id"]
 
     try:
-        user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
+        user_db = User.query.filter_by(id=user_id).first()
+        # user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
     except:
         return errorMsg("Could not retrieve data from the server. Please try again. (r-/-P-#1)")
 
@@ -365,21 +359,26 @@ def add_refuel():
     if not user_db:
         return errorMsg("An error has been occured! Please check your credentials. (r-/-P-#2)")
 
-    user = user_db[0]
+    user = user_db
     # ? is there really a need for sending username to jinja
     # username = user["username"]
-    currency_symbol = get_currency_symbol(user["currency"])
-    distance_unit = user["distance_unit"]
-    volume_unit = user["volume_unit"]
+    currency_symbol = get_currency_symbol(user.currency)
+    distance_unit = user.distance_unit
+    volume_unit = user.volume_unit
 
     # select vehicles to show in dropdown menu
     try:
-        vehicles = db.execute(
-            "SELECT * FROM vehicles WHERE user_id=?", user_id)
+        vehicles = (
+            db.session.query(Vehicle)
+            .filter(Vehicle.user_id == user_id)
+            .all()
+        )
+        # vehicles = db.execute(
+        #     "SELECT * FROM vehicles WHERE user_id=?", user_id)
     except:
         return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#3)")
 
-    vehicle_names = [vehicle['name'] for vehicle in vehicles]
+    vehicle_names = [vehicle.name for vehicle in vehicles]
 
     selected_vehicle = request.form.get("vehicle")
 
@@ -389,8 +388,13 @@ def add_refuel():
 
     # ? if user has more than one car, list should also show vehicle_name field
     try:
-        selected_vehicle_db = db.execute(
-            "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
+        selected_vehicle_db = (
+            db.session.query(Vehicle)
+            .filter(Vehicle.user_id == user_id, Vehicle.name == selected_vehicle)
+            .first()
+        )
+        # selected_vehicle_db = db.execute(
+        #     "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
     except:
         return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#4)")
 
@@ -399,7 +403,7 @@ def add_refuel():
                         "Make sure you have a vehicle added on vehicles page. "
                         "Then please try again later. (r/-P-#5)")
 
-    sel_vehicle_id = selected_vehicle_db[0]['id']
+    sel_vehicle_id = selected_vehicle_db.id
 
     # ensure date exists
     date = request.form.get("datetime")
@@ -409,7 +413,7 @@ def add_refuel():
     # current total distance traveled that can be read on the odometer (int type)
     distance = request.form.get("distance")
 
-    # ensure distance exist, and it's bigger than zero, if so convert the value into integer
+    # ensure distance exists, and it's bigger than zero, if so convert the value into integer
     if not distance or not int(distance) > 0 or not int(distance) < 10000000:
         return errorMsg("Invalid odometer reading! Value must be between 0 and 10000000")
     else:
@@ -418,7 +422,7 @@ def add_refuel():
     # volume of refuel (float type)
     volume = request.form.get("volume")
 
-    # ensure volume exist, and it's bigger than zero, if so convert the value into float
+    # ensure volume exists, and it's bigger than zero, if so convert the value into float
     if not volume or not float(volume) > 0 or not float(volume) < 10000:
         return errorMsg("Invalid volume! Value must be between 0 and 10000")
     else:
@@ -427,7 +431,7 @@ def add_refuel():
     # unit price of refuel (float type)
     unit_price = request.form.get("price")
 
-    # ensure price exist, and it's greater than zero, if so convert the value into float
+    # ensure price exists, and it's greater than zero, if so convert the value into float
     if not unit_price or not float(unit_price) > 0 or not float(unit_price) < 10000000:
         return errorMsg("Invalid unit price! Value must be between 0 and 10000000")
     else:
@@ -438,23 +442,54 @@ def add_refuel():
 
     # insert new entry into database
     try:
-        db.execute("INSERT INTO refuels "
-                   "(date, distance, volume, price, total_price, user_id, vehicle_id) "
-                   "VALUES(?,?,?,?,?,?,?)",
-                   date, distance, volume, unit_price, total_price, user_id, sel_vehicle_id)
-    except:
+        new_refuel = Refuel(
+            date=datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ'),
+            distance=distance,
+            volume=volume,
+            price=unit_price,
+            total_price=total_price,
+            user_id=user_id,
+            vehicle_id=sel_vehicle_id
+        )
+        db.session.add(new_refuel)
+        db.session.commit()
+        # db.execute("INSERT INTO refuels "
+        #            "(date, distance, volume, price, total_price, user_id, vehicle_id) "
+        #            "VALUES(?,?,?,?,?,?,?)",
+        #            date, distance, volume, unit_price, total_price, user_id, sel_vehicle_id)
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Ooops! An error has been occured during the INSERTION :(")
 
     # select updated refeuls after a new entry
     try:
-        refuels_upd_db = db.execute(
-            "SELECT refuels.id, refuels.date, refuels.distance, "
-            "refuels.volume, refuels.price, refuels.total_price, "
-            "refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "ORDER BY refuels.date DESC LIMIT 3;", user_id)
+        refuels_upd_db = (db.session.query(
+            Refuel.id,
+            Refuel.date,
+            Refuel.distance,
+            Refuel.volume,
+            Refuel.price,
+            Refuel.total_price,
+            Refuel.user_id,
+            Refuel.vehicle_id,
+            Vehicle.name.label('vehicle_name')
+        )
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id)
+            .order_by(Refuel.date.desc())
+            .limit(3)
+            .all()
+        )
+        # refuels_upd_db = db.execute(
+        #     "SELECT refuels.id, refuels.date, refuels.distance, "
+        #     "refuels.volume, refuels.price, refuels.total_price, "
+        #     "refuels.user_id, refuels.vehicle_id, vehicles.name AS vehicle_name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        #     "WHERE refuels.user_id=? "
+        #     "ORDER BY refuels.date DESC LIMIT 3;", user_id)
     except:
         return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#6)")
 
@@ -465,22 +500,40 @@ def add_refuel():
     # in order to hide/show tables in case no vehicle exist
     # if there's more than 1 vehicle, show one more column (vehicle name) on table
     try:
-        vehicles_len_upd = len(db.execute(
-            "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
+        vehicles_len_upd = db.session.query(db.func.count(db.distinct(
+            Refuel.vehicle_id
+        ))).filter(Refuel.user_id == user_id).scalar()
+        # vehicles_len_upd = len(db.execute(
+        #     "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/-P-#7)")
 
     # query updated statistics
     try:
-        statistics_db_upd = db.execute(
-            "SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM(total_price) AS expenses, "
-            "vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "GROUP BY vehicles.id "
-            "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
+        statistics_db_upd = (
+            db.session.query(
+                (db.func.max(Refuel.distance) -
+                 db.func.min(Refuel.distance)).label("distance"),
+                db.func.sum(Refuel.volume).label("liters"),
+                db.func.sum(Refuel.total_price).label("expenses"),
+                Vehicle.name.label("vehicle_name")
+            )
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id)
+            .group_by(Vehicle.id)
+            .having((db.func.max(Refuel.distance) - db.func.min(Refuel.distance)) > 0)
+            .all()
+        )
+
+        # statistics_db_upd = db.execute(
+        #     "SELECT (MAX(distance) - MIN(distance)) AS distance, "
+        #     "SUM(volume) AS liters, SUM(total_price) AS expenses, "
+        #     "vehicles.name AS vehicle_name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        #     "WHERE refuels.user_id=? "
+        #     "GROUP BY vehicles.id "
+        #     "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
     except:
         return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#8)")
 
@@ -488,34 +541,65 @@ def add_refuel():
 
     # total expenses from query above
     try:
-        total_expenses_db_upd = db.execute(
-            "SELECT SUM(expenses) "
-            "FROM "
-            "(SELECT (MAX(distance) - MIN(distance)) AS distance, "
-            "SUM(volume) AS liters, SUM(total_price) AS expenses, "
-            "vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? "
-            "GROUP BY vehicles.id "
-            "HAVING (MAX(distance) - MIN(distance) > 0)) "
-            "AS vehicles_traveled", user_id)
+        subquery = (
+            db.session.query(
+                (db.func.max(Refuel.distance) -
+                 db.func.min(Refuel.distance)).label("distance"),
+                db.func.sum(Refuel.volume).label("liters"),
+                db.func.sum(Refuel.total_price).label("expenses")
+            )
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id)
+            .group_by(Vehicle.id)
+            .having((db.func.max(Refuel.distance) - db.func.min(Refuel.distance)) > 0)
+            .subquery()
+        )
+        total_expenses_db_upd = db.session.query(
+            db.func.sum(subquery.c.expenses)
+        ).scalar()
+
+        # total_expenses_db_upd = db.execute(
+        #     "SELECT SUM(expenses) "
+        #     "FROM "
+        #     "(SELECT (MAX(distance) - MIN(distance)) AS distance, "
+        #     "SUM(volume) AS liters, SUM(total_price) AS expenses, "
+        #     "vehicles.name AS vehicle_name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        #     "WHERE refuels.user_id=? "
+        #     "GROUP BY vehicles.id "
+        #     "HAVING (MAX(distance) - MIN(distance) > 0)) "
+        #     "AS vehicles_traveled", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/-P-#9)")
 
-    total_expenses = total_expenses_db_upd[0]['SUM(expenses)']
+    total_expenses = total_expenses_db_upd
 
     # retrieve updated refuels to show on chart
     # MySQL
     try:
-        chart_db_upd = db.execute(
-            "SELECT SUM(total_price) AS total_price, "
-            "DATE_FORMAT(date, '%Y-%m-01') AS mon "
-            "FROM refuels "
-            "WHERE user_id=? "
-            "AND date < NOW() + INTERVAL 1 DAY "
-            "AND date > DATE_FORMAT(NOW() - INTERVAL 2 MONTH, '%Y-%m-01') "
-            "GROUP BY mon", user_id)
+        chart_db_upd = (
+            db.session.query(
+                db.func.sum(Refuel.total_price).label("total_price"),
+                db.func.date_format(Refuel.date, "%Y-%m-01").label("mon")
+            )
+            .filter(Refuel.user_id == user_id)
+            .filter(Refuel.date < db.func.now() + db.text("INTERVAL 1 DAY"))
+            .filter(Refuel.date > db.func.date_format(
+                db.func.now() - db.text("INTERVAL 2 MONTH"), "%Y-%m-01"
+            )
+            )
+            .group_by("mon")
+            .all()
+        )
+        # chart_db_upd = db.execute(
+        #     "SELECT SUM(total_price) AS total_price, "
+        #     "DATE_FORMAT(date, '%Y-%m-01') AS mon "
+        #     "FROM refuels "
+        #     "WHERE user_id=? "
+        #     "AND date < NOW() + INTERVAL 1 DAY "
+        #     "AND date > DATE_FORMAT(NOW() - INTERVAL 2 MONTH, '%Y-%m-01') "
+        #     "GROUP BY mon", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-P-#10)")
     # Postgres version
@@ -534,10 +618,10 @@ def add_refuel():
     # updated chart's labes & values
     # MySQL
     chart_dates_upd = [datetime.strptime(
-        x['mon'], '%Y-%m-%d').strftime('%m-%Y') for x in chart_db_upd]
+        x.mon, '%Y-%m-%d').strftime('%m-%Y') for x in chart_db_upd]
     # Postgres version
     # chart_dates_upd = [x["mon"].strftime('%m-%Y') for x in chart_db_upd]
-    chart_prices_upd = [x["total_price"] for x in chart_db_upd]
+    chart_prices_upd = [x.total_price for x in chart_db_upd]
 
     flash("Transaction has been added!")
 
@@ -1174,7 +1258,7 @@ def history():
             .filter(Refuel.user_id == user_id)
             .filter(Refuel.date < db.func.now() + db.text("INTERVAL 1 DAY"))
             .filter(Refuel.date > db.func.date_format(
-                db.func.now() - db.text("INTERVAL 12 MONTH"), "%Y-%m-01"
+                db.func.now() - db.text("INTERVAL 11 MONTH"), "%Y-%m-01"
             )
             )
             .group_by("mon")
@@ -1186,7 +1270,7 @@ def history():
         #     "FROM refuels "
         #     "WHERE user_id=? "
         #     "AND date < NOW() + INTERVAL 1 DAY "
-        #     "AND date > DATE_FORMAT(NOW() - INTERVAL 12 MONTH, '%Y-%m-01') "
+        #     "AND date > DATE_FORMAT(NOW() - INTERVAL 11 MONTH, '%Y-%m-01') "
         #     "GROUP BY mon", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/h-#6)")
