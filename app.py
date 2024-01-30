@@ -744,8 +744,15 @@ def changePassword():
 
         # query existing hashed password
         try:
-            password_db = db.execute(
-                "SELECT hash FROM users WHERE id=?", user_id)
+            password_db = (
+                db.session.query(
+                    User.hash
+                )
+                .filter_by(id=user_id)
+                .first()
+            )
+            # password_db = db.execute(
+            #     "SELECT hash FROM users WHERE id=?", user_id)
         except:
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
@@ -753,7 +760,7 @@ def changePassword():
         if not password_db:
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-        old_hash = password_db[0]["hash"]
+        old_hash = password_db.hash
 
         # old password submitted by user
         old_password = request.form.get("old-password")
@@ -792,8 +799,12 @@ def changePassword():
 
         # update users password in database
         try:
-            db.execute("UPDATE users SET hash=? WHERE id=?",
-                       new_hash, user_id)
+            db.session.query(User).filter_by(id=user_id).update({
+                'hash': new_hash
+            })
+            db.session.commit()
+            # db.execute("UPDATE users SET hash=? WHERE id=?",
+            #            new_hash, user_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
