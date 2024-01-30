@@ -994,13 +994,29 @@ def edit(id):
     # retrieve user's refuel row from database
     # * vehicle_name removed from refuel table
     try:
-        refuel_db = db.execute(
-            "SELECT refuels.id, refuels.date, refuels.distance, "
-            "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
-            "refuels.vehicle_id, vehicles.name AS vehicle_name "
-            "FROM refuels "
-            "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
-            "WHERE refuels.user_id=? AND refuels.id=?", user_id, id)
+        refuel_db = (
+            db.session.query(
+                Refuel.id,
+                Refuel.date,
+                Refuel.distance,
+                Refuel.volume,
+                Refuel.price,
+                Refuel.total_price,
+                Refuel.user_id,
+                Refuel.vehicle_id,
+                Vehicle.name.label("vehicle_name")
+            )
+            .join(Vehicle, Refuel.vehicle_id == Vehicle.id)
+            .filter(Refuel.user_id == user_id, Refuel.id == id)
+            .first()
+        )
+        # refuel_db = db.execute(
+        #     "SELECT refuels.id, refuels.date, refuels.distance, "
+        #     "refuels.volume, refuels.price, refuels.total_price, refuels.user_id, "
+        #     "refuels.vehicle_id, vehicles.name AS vehicle_name "
+        #     "FROM refuels "
+        #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
+        #     "WHERE refuels.user_id=? AND refuels.id=?", user_id, id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
@@ -1013,7 +1029,7 @@ def edit(id):
     # date = date_db[0]["TIMESTAMP WITH TIME ZONE 'NOW'"]
 
     # show old date as placeholder
-    date = refuel_db[0]["date"]
+    date = refuel_db.date
     # convert datetime.datetime object to string
     date = str(date)
     # print(f"OOOOOOOOOOOOO {date} OOOOOOOOOOOOO")
@@ -1021,8 +1037,14 @@ def edit(id):
     # 2022-12-14T16:16:12.117Z
 
     # retrieve user's vehicles' names
-    users_vehicles_db = db.execute(
-        "SELECT name FROM vehicles WHERE user_id=?", user_id)
+    try:
+        users_vehicles_db = (
+            db.session.query(Vehicle.name).filter_by(user_id=user_id).all()
+        )
+        # users_vehicles_db = db.execute(
+        #     "SELECT name FROM vehicles WHERE user_id=?", user_id)
+    except:
+        return errorMsg("Ooops! Could not retrieve data from database.")
 
     # amount of vehicles owned by user
     vehicle_len = len(users_vehicles_db)
@@ -1030,13 +1052,13 @@ def edit(id):
     # create a list that excludes the vehicle from transaction that needs to be edited
     vehicles_list = []
     for vehicle in users_vehicles_db:
-        if vehicle['name'] == refuel_db[0]["vehicle_name"]:
+        if vehicle.name == refuel_db.vehicle_name:
             continue
         else:
-            vehicles_list.append(vehicle['name'])
+            vehicles_list.append(vehicle.name)
 
     if request.method == "GET":
-        return render_template("edit.html", refuel=refuel_db[0], date=date, id=id, vehicles=vehicles_list, veh_len=vehicle_len, referrer=referrer)
+        return render_template("edit.html", refuel=refuel_db, date=date, id=id, vehicles=vehicles_list, veh_len=vehicle_len, referrer=referrer)
 
     elif request.method == "POST":
 
@@ -1084,27 +1106,59 @@ def edit(id):
             # retrieve new vehicle's id from database
             else:
                 try:
-                    vehicle_id_db = db.execute(
-                        "SELECT id FROM vehicles WHERE user_id=? AND name=?", user_id, vehicle_name)
-                    vehicle_id = vehicle_id_db[0]["id"]
+                    vehicle_id_db = (
+                        db.session.query(Vehicle)
+                        .filter(Vehicle.user_id == user_id, Vehicle.name == vehicle_name)
+                        .first()
+                    )
+                    # vehicle_id_db = db.execute(
+                    #     "SELECT id FROM vehicles WHERE user_id=? AND name=?", user_id, vehicle_name)
                 except:
                     return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
+            vehicle_id = vehicle_id_db.id
             # update database with edited refuel transaction
             try:
-                db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=? WHERE id=?",
-                           date, distance, volume, price, total_price, vehicle_id, id)
-            except:
-                return errorMsg("Ooops! An error has been occured :(")
+                db.session.query(Refuel).filter(Refuel.id == id).update(
+                    {
+                        'date': datetime.strptime(date, '%Y-%m-%d %H:%M:%S'),
+                        'distance': distance,
+                        'volume': volume,
+                        'price': price,
+                        'total_price': total_price,
+                        'vehicle_id': vehicle_id
+                    }
+                )
+                db.session.commit()
+                # db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=?, vehicle_id=? WHERE id=?",
+                #            date, distance, volume, price, total_price, vehicle_id, id)
+            except Exception as err:
+                print(f"An error OCCCCCUUURED: {str(err)}")
+                import traceback
+                traceback.print_exc()
+                return errorMsg("Ooops! An error has been occured :( - #r/-e/1")
 
         else:
 
             # update database with edited refuel transaction
             try:
-                db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=? WHERE id=?",
-                           date, distance, volume, price, total_price, id)
-            except:
-                return errorMsg("Ooops! An error has been occured :(")
+                db.session.query(Refuel).filter(Refuel.id == id).update(
+                    {
+                        'date': datetime.strptime(date, '%Y-%m-%d %H:%M:%S'),
+                        'distance': distance,
+                        'volume': volume,
+                        'price': price,
+                        'total_price': total_price,
+                    }
+                )
+                db.session.commit()
+                # db.execute("UPDATE refuels SET date=?, distance=?, volume=?, price=?, total_price=? WHERE id=?",
+                #            date, distance, volume, price, total_price, id)
+            except Exception as err:
+                print(f"An error OCCCCCUUURED: {str(err)}")
+                import traceback
+                traceback.print_exc()
+                return errorMsg("Ooops! An error has been occured :( - #r/-e/2")
 
         # user's previous route
         previous_route = request.form.get("referrer")
