@@ -825,11 +825,14 @@ def changeUsername():
     """Changes username"""
     user_id = session["user_id"]
     try:
-        username_db = db.execute(
-            "SELECT username FROM users WHERE id=?", user_id)
-        old_name = username_db[0]["username"]
+        username_db = db.session.query(
+            User.username).filter_by(id=user_id).first()
+        # username_db = db.execute(
+        #     "SELECT username FROM users WHERE id=?", user_id)
     except:
         return errorMsg("Ooops! An error has been occured during the retrieve of user information from database :(")
+
+    old_name = username_db.username
 
     if request.method == "GET":
         return render_template("change-username.html", old_username=old_name)
@@ -861,14 +864,25 @@ def changeUsername():
             return errorMsg("Invalid username!")
 
         # username has to be unique
-        usernames_db = db.execute("SELECT username FROM users")
+        try:
+            usernames_db = db.session.query(User.username).all()
+            # usernames_db = db.execute("SELECT username FROM users")
+        except:
+            return errorMsg("Ooops! An error has been occured during the retrieve of usernames from database :(")
+
         for username in usernames_db:
-            if new_username == username["username"]:
-                return errorMsg("This username is already exist :(")
+            if new_username == username.username:
+                return errorMsg("This username already exists :(")
 
         try:
-            db.execute("UPDATE users SET username=? WHERE id=?",
-                       new_username, user_id)
+            db.session.query(User).filter_by(id=user_id).update(
+                {
+                    'username': new_username
+                }
+            )
+            db.session.commit()
+            # db.execute("UPDATE users SET username=? WHERE id=?",
+            #            new_username, user_id)
         except:
             return errorMsg("Ooops! An error has been occured :(")
 
