@@ -900,15 +900,25 @@ def deleteRefuel(id):
     """Deletes refuel after confirmation"""
 
     if request.method == "POST":
-        refuel_delete_id = db.execute(
-            "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
+        try:
+            refuel_db = (
+                db.session.query(Refuel)
+                .filter(Refuel.id == id, Refuel.user_id == session["user_id"])
+                .first()
+            )
+            # refuel_db = db.execute(
+            #     "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
+        except:
+            return errorMsg(f"Ooops! Could not find the entry with the ID of {refuel_db}.")
 
-        if not refuel_delete_id:
+        if not refuel_db:
             return errorMsg("Transaction ID can not be found!")
 
         try:
-            # * db.execute("DELETE") returns the number of rows deleted
-            db.execute("DELETE FROM refuels WHERE id=?", id)
+            db.session.delete(refuel_db)
+            db.session.commit()
+            # # * db.execute("DELETE") returns the number of rows deleted
+            # db.execute("DELETE FROM refuels WHERE id=?", id)
         except:
             return errorMsg("Ooops! An error has been occured while deleting from refuels table :(")
 
