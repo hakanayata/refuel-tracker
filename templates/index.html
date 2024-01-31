@@ -1,185 +1,275 @@
-{% extends "layout.html" %}
-
-{% block title %} Home Page {% endblock %}
-{% block head %}
-{{ super() }}
+{% extends "layout.html" %} {% block title %} Home Page {% endblock %} {% block
+head %} {{ super() }}
 <!-- ? These script files should be moved to the bottom -->
 <script src="../static/dateLocalizer.js"></script>
 <script src="../static/dateHandler.js"></script>
 <script src="../static/script.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-{% endblock %}
-{% block main %}
-
-{% if vehicles %}
+{% endblock %} {% block main %} {% if vehicles %}
 <!-- <section> -->
 <form action="/" autocomplete="off" method="post">
-  <span class="text-secondary hr-title new-transaction">Add New Transaction</span>
-  <div class="mb-4 mt-3">
-    <div class="mb-3">
-      <label class="form-label text-light text-start" for="vehicle">Vehicle</label>
-      <select class="form-select mx-auto w-sm-92" name="vehicle" id="vehicle">
-        <option selected value="{{ vehicles[0]['name'] }}">
-          {{ vehicles[0]['name'] }}
-        </option>
-        {% for vehicle in vehicles[1:] %}
-        <option value="{{ vehicle['name'] }}">{{ vehicle['name'] }}</option>
-        {% endfor %}
-      </select>
+    <span class="text-secondary hr-title new-transaction"
+        >Add New Transaction</span
+    >
+    <div class="mb-4 mt-3">
+        <div class="mb-3">
+            <label class="form-label text-light text-start" for="vehicle"
+                >Vehicle</label
+            >
+            <select
+                class="form-select mx-auto w-sm-92"
+                name="vehicle"
+                id="vehicle"
+            >
+                <option selected value="{{ vehicles[0].id }}">
+                    {{ vehicles[0].name }}
+                </option>
+                {% for vehicle in vehicles[1:] %}
+                <option value="{{ vehicle.id }}">{{ vehicle['name'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="my-3">
+            <div>
+                <label class="form-label text-light text-start"
+                    >Date & Time</label
+                >
+            </div>
+            <input
+                class="form-control mx-auto w-sm-40"
+                style="display: inline-block"
+                type="date"
+                min="2016-01-01"
+                max="2046-01-01"
+                name="date"
+                required
+                step="any"
+                id="index-datepicker"
+            />
+            <input
+                class="form-control mx-auto w-sm-40"
+                style="display: inline-block"
+                type="time"
+                name="time"
+                required
+                step="any"
+                id="index-timepicker"
+            />
+            <!-- for backend -->
+            <input
+                class="form-control mx-auto w-sm-92"
+                type="text"
+                name="datetime"
+                id="index-date"
+                style="display: none"
+            />
+        </div>
+
+        <div class="my-3">
+            <label class="form-label text-light text-start"
+                >Refuel Details</label
+            >
+            <input
+                class="form-control mx-auto mb-2 w-sm-92"
+                type="number"
+                min="0"
+                max="9999999"
+                name="distance"
+                placeholder="Current odometer reading"
+                required
+            />
+            <input
+                class="form-control mx-auto mb-2 w-sm-92"
+                type="number"
+                min="0"
+                max="9999"
+                step="any"
+                name="volume"
+                placeholder="Fuel volume added"
+                required
+            />
+            <input
+                class="form-control mx-auto w-sm-92"
+                type="number"
+                min="0"
+                max="9999999"
+                step="any"
+                name="price"
+                placeholder="Unit price"
+                required
+            />
+        </div>
     </div>
 
-    <div class="my-3">
-      <div>
-        <label class="form-label text-light text-start">Date & Time</label>
-      </div>
-      <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="date" min="2016-01-01"
-        max="2046-01-01" name="date" required step="any" id="index-datepicker" />
-      <input class="form-control mx-auto w-sm-40" style="display: inline-block;" type="time" name="time" required
-        step="any" id="index-timepicker" />
-      <!-- for backend -->
-      <input class="form-control mx-auto w-sm-92" type="text" name="datetime" id="index-date" style="display: none;" />
-    </div>
-
-    <div class="my-3">
-      <label class="form-label text-light text-start">Refuel Details</label>
-      <input class="form-control mx-auto mb-2 w-sm-92" type="number" min="0" max="9999999" name="distance"
-        placeholder="Current odometer reading" required />
-      <input class="form-control mx-auto mb-2 w-sm-92" type="number" min="0" max="9999" step="any" name="volume"
-        placeholder="Fuel volume added" required />
-      <input class="form-control mx-auto w-sm-92" type="number" min="0" max="9999999" step="any" name="price"
-        placeholder="Unit price" required />
-    </div>
-
-  </div>
-
-  <button class="btn btn-success w-sm-92 mx-auto mt-3 px-4">
-    Add Refuel Transaction
-  </button>
+    <button class="btn btn-success w-sm-92 mx-auto mt-3 px-4">
+        Add Refuel Transaction
+    </button>
 </form>
-
 
 <!-- <hr class="text-light mx-auto w-75 w-sm-92 mt-5" /> -->
 <!-- <hr class="mx-auto w-25"> -->
 {% if ref_len > 0 %}
-<div id="table-show-onload" class="my-5" style="visibility: hidden;">
-  <table class="align-middle my-5 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100">
-    <span class="text-secondary text-center hr-title recent-entries">Most Recent Entries</span>
-    <!-- <caption class="text-secondary">
+<div id="table-show-onload" class="my-5" style="visibility: hidden">
+    <table
+        class="align-middle my-5 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100"
+    >
+        <span class="text-secondary text-center hr-title recent-entries"
+            >Most Recent Entries</span
+        >
+        <!-- <caption class="text-secondary">
       Most recent entries
     </caption> -->
-    <thead class="align-middle">
-      <tr>
-        <!-- <th>#</th> -->
-        {% if veh_len > 1 %}
-        <th>Vehicle</th>
-        {% endif %}
-        <th>Date | Time</th>
-        <th>Odometer Reading</th>
-        <th>Fuel Volume Added</th>
-        <th>Unit Price</th>
-        <th>Total Price</th>
-        <th class="exclude-print">Modify</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for refuel in refuels %}
-      <tr>
-        <!-- <td>{{ loop.index }}</td> -->
-        {% if veh_len > 1 %}
-        <td>{{ refuel["vehicle_name"] }}</td>
-        {% endif %}
-        <td class="dateNtime">{{ refuel["date"] }}</td>
-        <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
-        <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
-        <td>{{ refuel["price"] | cur(symbol) }}</td>
-        <td>{{ refuel["total_price"] | cur(symbol) }}</td>
-        <td class="exclude-print">
-          <a class="btn modify-button edit" href="{{ url_for('edit', id=refuel['id']) }}" name="{{ refuel['id'] }}">
-            <i class="fa-solid fa-pen"></i>
-          </a>
+        <thead class="align-middle">
+            <tr>
+                <!-- <th>#</th> -->
+                {% if veh_len > 1 %}
+                <th>Vehicle</th>
+                {% endif %}
+                <th>Date | Time</th>
+                <th>Odometer Reading</th>
+                <th>Fuel Volume Added</th>
+                <th>Unit Price</th>
+                <th>Total Price</th>
+                <th class="exclude-print">Modify</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for refuel in refuels %}
+            <tr>
+                <!-- <td>{{ loop.index }}</td> -->
+                {% if veh_len > 1 %}
+                <td>{{ refuel["vehicle_name"] }}</td>
+                {% endif %}
+                <td class="dateNtime">{{ refuel["date"] }}</td>
+                <td>{{ refuel["distance"] | dist(distance_unit) }}</td>
+                <td>{{ refuel["volume"] | vol(volume_unit) }}</td>
+                <td>{{ refuel["price"] | cur(symbol) }}</td>
+                <td>{{ refuel["total_price"] | cur(symbol) }}</td>
+                <td class="exclude-print">
+                    <a
+                        class="btn modify-button edit"
+                        href="{{ url_for('edit', id=refuel['id']) }}"
+                        name="{{ refuel['id'] }}"
+                    >
+                        <i class="fa-solid fa-pen"></i>
+                    </a>
 
-          <!-- Button trigger modal -->
-          <button type="button" class="btn modify-button delete" data-bs-toggle="modal"
-            data-bs-target="#deleteModal{{ refuel['id'] }}">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
+                    <!-- Button trigger modal -->
+                    <button
+                        type="button"
+                        class="btn modify-button delete"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteModal{{ refuel['id'] }}"
+                    >
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
 
-          <!-- Modal -->
-          <div class="modal fade" id="deleteModal{{ refuel['id']}}" tabindex="-1" aria-labelledby="deleteModalLabel"
-            aria-hidden="true">
-            <!-- model-sm removed from the class below -->
-            <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h1 class="modal-title fs-4 text-dark" id="deleteModalLabel">
-                    Confirmation
-                  </h1>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                  <p class="text-dark fs-5">Are you sure?</p>
-                </div>
-                <div class="modal-footer">
-                  <!-- btn-sm removed from the class below -->
-                  <button type="button" class="btn btn-secondary w-auto px-4" data-bs-dismiss="modal">
-                    No
-                  </button>
-                  <form action="{{ url_for('deleteRefuel', id=refuel['id']) }}" method="post">
-                    <input class="btn btn-danger w-auto px-4" type="submit" value="Yes" />
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-
-    </tbody>
-  </table>
+                    <!-- Modal -->
+                    <div
+                        class="modal fade"
+                        id="deleteModal{{ refuel['id']}}"
+                        tabindex="-1"
+                        aria-labelledby="deleteModalLabel"
+                        aria-hidden="true"
+                    >
+                        <!-- model-sm removed from the class below -->
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1
+                                        class="modal-title fs-4 text-dark"
+                                        id="deleteModalLabel"
+                                    >
+                                        Confirmation
+                                    </h1>
+                                    <button
+                                        type="button"
+                                        class="btn-close"
+                                        data-bs-dismiss="modal"
+                                        aria-label="Close"
+                                    ></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-dark fs-5">Are you sure?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <!-- btn-sm removed from the class below -->
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary w-auto px-4"
+                                        data-bs-dismiss="modal"
+                                    >
+                                        No
+                                    </button>
+                                    <form
+                                        action="{{ url_for('deleteRefuel', id=refuel['id']) }}"
+                                        method="post"
+                                    >
+                                        <input
+                                            class="btn btn-danger w-auto px-4"
+                                            type="submit"
+                                            value="Yes"
+                                        />
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 <!-- <hr class="text-light mx-auto w-75 w-sm-92 mt-5" /> -->
 
 {% if stats %}
 <table
-  class="align-middle caption-top my-5 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100"
-  id="stats-table">
-  <span class="text-secondary text-center hr-title stats">Stats</span>
-  <!-- <caption class="text-secondary">
+    class="align-middle caption-top my-5 mx-auto table table-bordered table-dark table-sm table-striped w-75 w-sm-100"
+    id="stats-table"
+>
+    <span class="text-secondary text-center hr-title stats">Stats</span>
+    <!-- <caption class="text-secondary">
     Stats
   </caption> -->
-  <thead class="align-middle">
-    <tr>
-      <th>Vehicle</th>
-      <th>Total Distance Traveled</th>
-      <th>Total Fuel Volume Added</th>
-      <th>Total Expenses</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for stat in stats %}
-    <tr>
-      <td>{{ stat["vehicle_name"] }}</td>
-      <td>{{ stat["distance"] | dist(distance_unit) }}</td>
-      <td>{{ stat["liters"] | vol(volume_unit) }}</td>
-      <td>{{ stat["expenses"] | cur(symbol) }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-  {% if stats_length >=2 %}
-  <tfoot>
-    <tr>
-      <td class="border-0 fs-md-5 fw-bold text-end ms-auto grand-total" colspan="3">
-        Grand Total:
-      </td>
-      <td class="border-0 fs-md-5 fw-bold text-center grand-total" colspan="1"> {{ total_expenses |
-        cur(symbol) }}
-      </td>
-    </tr>
-
-  </tfoot>
-  {% endif %}
+    <thead class="align-middle">
+        <tr>
+            <th>Vehicle</th>
+            <th>Total Distance Traveled</th>
+            <th>Total Fuel Volume Added</th>
+            <th>Total Expenses</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for stat in stats %}
+        <tr>
+            <td>{{ stat["vehicle_name"] }}</td>
+            <td>{{ stat["distance"] | dist(distance_unit) }}</td>
+            <td>{{ stat["liters"] | vol(volume_unit) }}</td>
+            <td>{{ stat["expenses"] | cur(symbol) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    {% if stats_length >=2 %}
+    <tfoot>
+        <tr>
+            <td
+                class="border-0 fs-md-5 fw-bold text-end ms-auto grand-total"
+                colspan="3"
+            >
+                Grand Total:
+            </td>
+            <td
+                class="border-0 fs-md-5 fw-bold text-center grand-total"
+                colspan="1"
+            >
+                {{ total_expenses | cur(symbol) }}
+            </td>
+        </tr>
+    </tfoot>
+    {% endif %}
 </table>
 
 <!-- <hr class="text-light mx-auto w-75 w-sm-92 my-5" /> -->
@@ -191,106 +281,108 @@
 <span class="text-secondary text-center hr-title chart">Chart</span>
 
 <div class="container-fluid mt-5">
-  <div class="row d-flex justify-content-center">
-    <div class="col-md-9">
-      <div class="mx-auto">
-        <div class="card border-secondary">
-          <div class="card-header bg-dark text-center">
-            <p style="color: #40e1b0">
-              MONTHLY TOTAL FUEL EXPENSES - LAST 3 MONTHS
-            </p>
-          </div>
-          <div class="bg-dark card-body">
-            <canvas style="background-color: #252932" id="myChart"></canvas>
-          </div>
-          <div class="card-footer bg-dark text-info text-end">
-            <!-- Total Expense ({{ symbol }}) -->
-          </div>
+    <div class="row d-flex justify-content-center">
+        <div class="col-md-9">
+            <div class="mx-auto">
+                <div class="card border-secondary">
+                    <div class="card-header bg-dark text-center">
+                        <p style="color: #40e1b0">
+                            MONTHLY TOTAL FUEL EXPENSES - LAST 3 MONTHS
+                        </p>
+                    </div>
+                    <div class="bg-dark card-body">
+                        <canvas
+                            style="background-color: #252932"
+                            id="myChart"
+                        ></canvas>
+                    </div>
+                    <div class="card-footer bg-dark text-info text-end">
+                        <!-- Total Expense ({{ symbol }}) -->
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-
     </div>
-  </div>
 </div>
 
 <script>
-  let chart_dates_js = {{ chart_dates | safe }};
-  let chart_prices_js = {{ chart_prices | safe }};
-  let currency_symbol = "{{ symbol | safe}}";
+    let chart_dates_js = {{ chart_dates | safe }};
+    let chart_prices_js = {{ chart_prices | safe }};
+    let currency_symbol = "{{ symbol | safe}}";
 
-  const ctx = document.getElementById('myChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: chart_dates_js,
-      datasets: [{
-        axis: 'x',
-        label: 'Monthly Expense',
-        data: chart_prices_js,
-        backgroundColor: [
-          'rgba(23, 140, 120, .9)',
-        ],
-        borderColor: [
-          'rgba(64, 225, 176, 1)',
-        ],
-        borderWidth: 1,
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true,
-          // title for y axis
-          // title: {
-          // color: '#afa',
-          // display: true,
-          // text: 'Cost',
-          // },
-          ticks: {
-            align: 'center',
-            padding: 6,
-            color: '#ddd',
-            callback: function (value, index, ticks) {
-              if (currency_symbol === '€' || currency_symbol == '₺') {
-                return `${value} ${currency_symbol}`;
-              } else {
-                return `${currency_symbol} ${value}`;
-              }
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: chart_dates_js,
+        datasets: [{
+          axis: 'x',
+          label: 'Monthly Expense',
+          data: chart_prices_js,
+          backgroundColor: [
+            'rgba(23, 140, 120, .9)',
+          ],
+          borderColor: [
+            'rgba(64, 225, 176, 1)',
+          ],
+          borderWidth: 1,
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            // title for y axis
+            // title: {
+            // color: '#afa',
+            // display: true,
+            // text: 'Cost',
+            // },
+            ticks: {
+              align: 'center',
+              padding: 6,
+              color: '#ddd',
+              callback: function (value, index, ticks) {
+                if (currency_symbol === '€' || currency_symbol == '₺') {
+                  return `${value} ${currency_symbol}`;
+                } else {
+                  return `${currency_symbol} ${value}`;
+                }
+              },
+            },
+            grid: {
+              color: '#333',
+              tickLength: 5,
             },
           },
-          grid: {
-            color: '#333',
-            tickLength: 5,
-          },
-        },
-        x: {
-          // title for x axis
-          // title: {
-          // color: '#afa',
-          // display: true,
-          // text: 'Month',
-          // },
-          ticks: {
-            color: '#ddd',
-            padding: 6,
-          },
-          grid: {
-            color: '#333',
-            tickLength: 5,
+          x: {
+            // title for x axis
+            // title: {
+            // color: '#afa',
+            // display: true,
+            // text: 'Month',
+            // },
+            ticks: {
+              color: '#ddd',
+              padding: 6,
+            },
+            grid: {
+              color: '#333',
+              tickLength: 5,
+            }
           }
-        }
-      },
-      indexAxis: 'x',
-      color: '#aaa',
-      animation: false,
-      barPercentage: .6,
-      plugins: {
-        legend: {
-          display: false,
+        },
+        indexAxis: 'x',
+        color: '#aaa',
+        animation: false,
+        barPercentage: .6,
+        plugins: {
+          legend: {
+            display: false,
+          },
         },
       },
-    },
-  });
+    });
 </script>
 
 {% endif %} {% else %}
