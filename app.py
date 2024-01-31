@@ -113,10 +113,11 @@ with app.app_context():
 # X todo: add grand total row to the stats table on home page for users who have multiple vehicles.
 # x todo: edit page: if user comes from history page, they should be redirected to the history page after editing
 # x todo: add js validation on change-password, change-username pages
+# x todo: add ORM
 # todo: edit page: add cancel button to go back
 # todo: database: refuels table, change distance -> odometer
 # todo: history page: show individual grand total row for each vehicle table.
-# todo: add ORM
+# todo: index & edit & history: when there are vehicles that share the same name, show plate number next to them
 
 # ! add minlength and maxlength to password fields on html pages.
 # ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
@@ -145,25 +146,24 @@ def index():
         user_db = User.query.filter_by(id=user_id).first()
         # user_db = db.execute(
         #     "SELECT * FROM users WHERE id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Couldn't retrieve data from server. Please refresh the page. (r-/-#1)")
 
     # extra validation
     if not user_db:
         return errorMsg("No such user. Please check your credentials. (r-/-#2)")
 
-    # user = user_db[0]
-    user = user_db
-
-    username = user.username
-    # currency_symbol = user["currency"][-1]
-    currency_symbol = get_currency_symbol(user.currency)
-    distance_unit = user.distance_unit
-    volume_unit = user.volume_unit
+    username = user_db.username
+    currency_symbol = get_currency_symbol(user_db.currency)
+    distance_unit = user_db.distance_unit
+    volume_unit = user_db.volume_unit
 
     # select vehicles to show in dropdown menu
     try:
-        vehicles = Vehicle.query.filter_by(user_id=user_id)
+        vehicles = Vehicle.query.filter_by(user_id=user_id).all()
         # vehicles = db.execute(
         #     "SELECT * FROM vehicles WHERE user_id=?", user_id)
     except:
@@ -196,7 +196,10 @@ def index():
         #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
         #     "WHERE refuels.user_id=? "
         #     "ORDER BY refuels.date DESC LIMIT 3;", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#4)")
 
     # length of refuels to show/hide tables (most recent entries & statistics table)
@@ -210,7 +213,10 @@ def index():
             Refuel.vehicle_id))).filter(Refuel.user_id == user_id).scalar()
         # vehicles_len = len(db.execute(
         #     "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#5)")
 
     # query for total distance traveled & total liters & total expenses
@@ -240,7 +246,10 @@ def index():
         #     "WHERE refuels.user_id=? "
         #     "GROUP BY vehicles.id "
         #     "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-/#6)")
 
     stats_length = len(statistics_db)
@@ -276,7 +285,10 @@ def index():
         #     "GROUP BY vehicles.id "
         #     "HAVING (MAX(distance) - MIN(distance) > 0)) "
         #     "AS vehicles_traveled", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#7)")
 
     total_expenses = total_expenses_db
@@ -306,7 +318,10 @@ def index():
         #     "AND date < NOW() + INTERVAL 1 DAY "
         #     "AND date > DATE_FORMAT(NOW() - INTERVAL 2 MONTH, '%Y-%m-01') "
         #     "GROUP BY mon", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-#8)")
 
     # ? PostgreSQL version
@@ -352,19 +367,19 @@ def add_refuel():
     try:
         user_db = User.query.filter_by(id=user_id).first()
         # user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from the server. Please try again. (r-/-P-#1)")
 
     # extra validation
     if not user_db:
         return errorMsg("An error has been occured! Please check your credentials. (r-/-P-#2)")
 
-    user = user_db
-    # ? is there really a need for sending username to jinja
-    # username = user["username"]
-    currency_symbol = get_currency_symbol(user.currency)
-    distance_unit = user.distance_unit
-    volume_unit = user.volume_unit
+    currency_symbol = get_currency_symbol(user_db.currency)
+    distance_unit = user_db.distance_unit
+    volume_unit = user_db.volume_unit
 
     # select vehicles to show in dropdown menu
     try:
@@ -375,27 +390,33 @@ def add_refuel():
         )
         # vehicles = db.execute(
         #     "SELECT * FROM vehicles WHERE user_id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#3)")
 
-    vehicle_names = [vehicle.name for vehicle in vehicles]
+    vehicle_ids = [vehicle.id for vehicle in vehicles]
 
-    selected_vehicle = request.form.get("vehicle")
+    selected_vehicle_id = request.form.get("vehicle")
 
     # validation
-    if not selected_vehicle or not selected_vehicle in vehicle_names:
+    if not selected_vehicle_id or not int(selected_vehicle_id) in vehicle_ids:
         return errorMsg("Invalid vehicle!")
 
     # ? if user has more than one car, list should also show vehicle_name field
     try:
         selected_vehicle_db = (
             db.session.query(Vehicle)
-            .filter(Vehicle.user_id == user_id, Vehicle.name == selected_vehicle)
+            .filter(Vehicle.user_id == user_id, Vehicle.id == selected_vehicle_id)
             .first()
         )
         # selected_vehicle_db = db.execute(
         #     "SELECT * FROM vehicles WHERE user_id=? AND name = ?", user_id, selected_vehicle)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#4)")
 
     if not selected_vehicle_db:
@@ -403,7 +424,7 @@ def add_refuel():
                         "Make sure you have a vehicle added on vehicles page. "
                         "Then please try again later. (r/-P-#5)")
 
-    sel_vehicle_id = selected_vehicle_db.id
+    # sel_vehicle_id = selected_vehicle_db.id
 
     # ensure date exists
     date = request.form.get("datetime")
@@ -449,7 +470,7 @@ def add_refuel():
             price=unit_price,
             total_price=total_price,
             user_id=user_id,
-            vehicle_id=sel_vehicle_id
+            vehicle_id=selected_vehicle_id
         )
         db.session.add(new_refuel)
         db.session.commit()
@@ -490,7 +511,10 @@ def add_refuel():
         #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
         #     "WHERE refuels.user_id=? "
         #     "ORDER BY refuels.date DESC LIMIT 3;", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#6)")
 
     # length of updated refuels rows
@@ -505,7 +529,10 @@ def add_refuel():
         ))).filter(Refuel.user_id == user_id).scalar()
         # vehicles_len_upd = len(db.execute(
         #     "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/-P-#7)")
 
     # query updated statistics
@@ -534,7 +561,10 @@ def add_refuel():
         #     "WHERE refuels.user_id=? "
         #     "GROUP BY vehicles.id "
         #     "HAVING (MAX(distance) - MIN(distance) > 0)", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from the server. Please try again. (r/-P-#8)")
 
     stats_length_upd = len(statistics_db_upd)
@@ -570,7 +600,10 @@ def add_refuel():
         #     "GROUP BY vehicles.id "
         #     "HAVING (MAX(distance) - MIN(distance) > 0)) "
         #     "AS vehicles_traveled", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/-P-#9)")
 
     total_expenses = total_expenses_db_upd
@@ -600,7 +633,10 @@ def add_refuel():
         #     "AND date < NOW() + INTERVAL 1 DAY "
         #     "AND date > DATE_FORMAT(NOW() - INTERVAL 2 MONTH, '%Y-%m-01') "
         #     "GROUP BY mon", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r-/-P-#10)")
     # Postgres version
     # try:
@@ -656,17 +692,18 @@ def changeCur():
         )
         # user_units_db = db.execute(
         #     "SELECT currency, distance_unit, volume_unit FROM users WHERE id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if not user_units_db:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
-    user_units = user_units_db
-
-    user_currency = user_units.currency
-    user_distance_unit = user_units.distance_unit
-    user_volume_unit = user_units.volume_unit
+    user_currency = user_units_db.currency
+    user_distance_unit = user_units_db.distance_unit
+    user_volume_unit = user_units_db.volume_unit
 
     other_currencies = []
     for currency in currencies:
@@ -715,7 +752,10 @@ def changeCur():
             db.session.commit()
             # db.execute("UPDATE users SET currency=?, distance_unit=?, volume_unit=? WHERE id=?",
             #            selected_currency, selected_distance_unit, selected_volume_unit, user_id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Ooops! An error has been occured :(")
 
         # flash user with message
@@ -753,7 +793,10 @@ def changePassword():
             )
             # password_db = db.execute(
             #     "SELECT hash FROM users WHERE id=?", user_id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         # incase db returns empty list
@@ -805,7 +848,10 @@ def changePassword():
             db.session.commit()
             # db.execute("UPDATE users SET hash=? WHERE id=?",
             #            new_hash, user_id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Ooops! An error has been occured :(")
 
         # flash with a message
@@ -829,7 +875,10 @@ def changeUsername():
             User.username).filter_by(id=user_id).first()
         # username_db = db.execute(
         #     "SELECT username FROM users WHERE id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Ooops! An error has been occured during the retrieve of user information from database :(")
 
     old_name = username_db.username
@@ -883,7 +932,10 @@ def changeUsername():
             db.session.commit()
             # db.execute("UPDATE users SET username=? WHERE id=?",
             #            new_username, user_id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Ooops! An error has been occured :(")
 
         flash("Your username has been updated!")
@@ -908,7 +960,10 @@ def deleteRefuel(id):
             )
             # refuel_db = db.execute(
             #     "SELECT * FROM refuels WHERE user_id=? AND id=?", session["user_id"], id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg(f"Ooops! Could not find the entry with the ID of {refuel_db}.")
 
         if not refuel_db:
@@ -919,7 +974,10 @@ def deleteRefuel(id):
             db.session.commit()
             # # * db.execute("DELETE") returns the number of rows deleted
             # db.execute("DELETE FROM refuels WHERE id=?", id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Ooops! An error has been occured while deleting from refuels table :(")
 
         flash("Transaction has been deleted!")
@@ -941,19 +999,26 @@ def deleteVehicle(id):
                 user_id=session["user_id"], id=id).first()
             # vehicle_delete_db = db.execute(
             #     "SELECT * FROM vehicles WHERE user_id=? AND id=?", session["user_id"], id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         if not vehicle_delete_db:
             return errorMsg("No vehicles found!")
 
         vehicle = vehicle_delete_db.name
+        vehicle_license_plate = vehicle_delete_db.license_plate
 
         # delete refuels first
         try:
             rows = Refuel.query.filter_by(vehicle_id=id).all()
             # rows = db.execute("SELECT * FROM refuels WHERE vehicle_id=?", id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
         if len(rows) > 0:
@@ -962,7 +1027,10 @@ def deleteVehicle(id):
                     Refuel.vehicle_id == id).delete()
                 # db.execute("DELETE FROM refuels WHERE vehicle_id=?", id)
                 db.session.commit()
-            except:
+            except Exception as err:
+                print(f"An error OCCCCCUUURED: {str(err)}")
+                import traceback
+                traceback.print_exc()
                 return errorMsg("Ooops! An error has been occured while deleting from refuels table :( ")
 
         # delete vehicle
@@ -971,10 +1039,14 @@ def deleteVehicle(id):
             # db.session.query(Vehicle).filter(id == id).delete()
             db.session.commit()
             # db.execute("DELETE FROM vehicles WHERE id=?", id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Ooops! An error has been occured while deleting from vehicles table :(")
 
-        flash(f"{vehicle} has been deleted!")
+        flash(
+            f"{vehicle} with license plate: '{vehicle_license_plate}' has been deleted!")
 
         return redirect('/')
 
@@ -1017,7 +1089,10 @@ def edit(id):
         #     "FROM refuels "
         #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
         #     "WHERE refuels.user_id=? AND refuels.id=?", user_id, id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # ensure refuel submitted was valid
@@ -1043,7 +1118,10 @@ def edit(id):
         )
         # users_vehicles_db = db.execute(
         #     "SELECT name FROM vehicles WHERE user_id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Ooops! Could not retrieve data from database.")
 
     # amount of vehicles owned by user
@@ -1068,7 +1146,10 @@ def edit(id):
         # date validation
         try:
             date = request.form.get("datetime")
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("An error has been occured during the process of assigning a value to date!")
 
         distance = request.form.get("distance")
@@ -1113,7 +1194,10 @@ def edit(id):
                     )
                     # vehicle_id_db = db.execute(
                     #     "SELECT id FROM vehicles WHERE user_id=? AND name=?", user_id, vehicle_name)
-                except:
+                except Exception as err:
+                    print(f"An error OCCCCCUUURED: {str(err)}")
+                    import traceback
+                    traceback.print_exc()
                     return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
             vehicle_id = vehicle_id_db.id
@@ -1121,7 +1205,7 @@ def edit(id):
             try:
                 db.session.query(Refuel).filter(Refuel.id == id).update(
                     {
-                        'date': datetime.strptime(date, '%Y-%m-%d %H:%M:%S'),
+                        'date': datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ'),
                         'distance': distance,
                         'volume': volume,
                         'price': price,
@@ -1144,7 +1228,7 @@ def edit(id):
             try:
                 db.session.query(Refuel).filter(Refuel.id == id).update(
                     {
-                        'date': datetime.strptime(date, '%Y-%m-%d %H:%M:%S'),
+                        'date': datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ'),
                         'distance': distance,
                         'volume': volume,
                         'price': price,
@@ -1188,7 +1272,10 @@ def editVehicle(id):
         )
         # vehicle_db = db.execute(
         #     "SELECT name, license_plate FROM vehicles WHERE user_id=? AND id=?", user_id, id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # user musn't reach ids that aren't his/her, by changing the URL manually
@@ -1199,6 +1286,7 @@ def editVehicle(id):
 
     # current name of the vehicle, user might keep the name, this is used in name check below
     current_vehicle_name = vehicle_db.name
+    current_license_plate = vehicle_db.license_plate
 
     # every vehicle from user. This will be used in name check below
     try:
@@ -1207,7 +1295,10 @@ def editVehicle(id):
         )
         # user_vehicles_db = db.execute(
         #     "SELECT * FROM vehicles WHERE user_id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if request.method == "GET":
@@ -1220,7 +1311,6 @@ def editVehicle(id):
         if not vehicle_name:
             return errorMsg("Must provide name for a vehicle")
 
-        # ? ncortex
         if vehicle_name.startswith(" "):
             return errorMsg("Vehicle name can not start with space character(s)")
         if vehicle_name.endswith(" "):
@@ -1237,17 +1327,18 @@ def editVehicle(id):
         if license_plate.endswith(" "):
             return errorMsg("Vehicle name can not end with space character(s)")
 
-        # ! check if this works fine
-        # check if vehicle name already exists for the same user EXCEPT FOR FORMER VEHICLE NAME
+        # check if user made any change
+        if current_vehicle_name == vehicle_name and current_license_plate == license_plate:
+            flash("You didn't change anything.")
+            return render_template("edit-vehicle.html", vehicle=vehicle_db, id=id)
+
+        # check if user tries to give the same name and the same l.plate for another vehicle
         if len(user_vehicles_db) > 1:
             for i in range(len(user_vehicles_db)):
                 # if name already exists and license plates are also the same
                 if user_vehicles_db[i].name == vehicle_name.strip().lower() and user_vehicles_db[i].license_plate.strip().lower() == license_plate.strip().lower():
-                    # it should yield an error if license plates are also the same
                     flash("This vehicle already exists.")
                     return render_template("edit-vehicle.html", vehicle=vehicle_db, id=id)
-                else:
-                    break
 
         # update database
         try:
@@ -1263,7 +1354,10 @@ def editVehicle(id):
             # * vehicle_name removed from refuel table
             # db.execute(
             #     "UPDATE refuels SET vehicle_name=? WHERE vehicle_id=?", vehicle_name, id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Ooops! An error has been occured :(")
 
         flash("Vehicle's information has been updated!")
@@ -1285,18 +1379,19 @@ def history():
         user_db = User.query.filter_by(id=user_id).first()
         # user_db = db.execute(
         #     "SELECT * FROM users WHERE id=?", user_id)
-    except RuntimeError:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not receieve data from server. Please refresh the page.")
 
     if not user_db:
         return errorMsg("Could not retrieve user data from server. Please refresh the page.")
 
-    user = user_db
-
     # currency_symbol = user["currency"][-1]
-    currency_symbol = get_currency_symbol(user.currency)
-    distance_unit = user.distance_unit
-    volume_unit = user.volume_unit
+    currency_symbol = get_currency_symbol(user_db.currency)
+    distance_unit = user_db.distance_unit
+    volume_unit = user_db.volume_unit
 
     # query all transactions
     try:
@@ -1324,7 +1419,10 @@ def history():
         #     "JOIN vehicles ON refuels.vehicle_id = vehicles.id "
         #     "WHERE refuels.user_id=? "
         #     "ORDER BY vehicles.id ASC, refuels.date DESC", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # length of transactions
@@ -1361,7 +1459,10 @@ def history():
         )
         # sum_expense_db = db.execute(
         #     "SELECT SUM(total_price) AS grand_total FROM refuels WHERE user_id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # grand total
@@ -1393,7 +1494,10 @@ def history():
         #     "AND date < NOW() + INTERVAL 1 DAY "
         #     "AND date > DATE_FORMAT(NOW() - INTERVAL 11 MONTH, '%Y-%m-01') "
         #     "GROUP BY mon", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/h-#6)")
 
     # SQLite version (shows current year only)
@@ -1428,7 +1532,10 @@ def history():
         ))).filter(Refuel.user_id == user_id).scalar()
         # vehicles_len = len(db.execute(
         #     "SELECT DISTINCT vehicle_id FROM refuels WHERE user_id=?", user_id))
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page. (r/h-#7)")
 
     if request.method == "GET":
@@ -1455,21 +1562,16 @@ def login():
         elif not request.form.get("password"):
             return errorMsg("Type a valid password")
 
-        users = User.query.all()
-        print("•••• ", users)
-        print("•••$$$ ", type(users[0]))
-
-        user1 = User.query.filter_by(
-            username=request.form.get("username")).first()
-        print("••••••• ", user1.username)
-
         # Query database for username
         try:
             users_db = User.query.filter_by(
                 username=request.form.get("username")).first()
             # users_db = db.execute("SELECT * FROM users WHERE username = ?",
             #                       request.form.get("username"))
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Could not retrieve data from server. Please refresh the page. (r-login-#1)")
 
         # Ensure username exists and password is correct
@@ -1533,8 +1635,12 @@ def signup():
         # if username already exist
         # retrieve users from database
         try:
-            users_db = db.execute("SELECT * FROM users")
-        except:
+            users_db = db.session.query(User).all()
+            # users_db = db.execute("SELECT * FROM users")
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Could not retrieve data from server. Please refresh the page. (r-signup-#1)")
 
         if not users_db:
@@ -1542,7 +1648,7 @@ def signup():
 
         # ensure username does not exist
         for user in users_db:
-            if user["username"] == username:
+            if user.username == username:
                 return errorMsg("Username is already taken")
 
         # hash password
@@ -1550,24 +1656,39 @@ def signup():
 
         # add register date to table
         try:
-            register_date_db = db.execute("SELECT NOW() AS now")
-        except:
+            register_date_db = db.session.query(
+                db.func.now().label("now")).first()
+            # register_date_db = db.execute("SELECT NOW() AS now")
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Could not retrieve data from server. Please refresh the page. (r-signup-#3)")
 
         if not register_date_db:
             return errorMsg("Could not access date field. Please refresh the page. (r-signup-#4)")
 
-        register_date = register_date_db[0]["now"]
+        register_date = register_date_db.now
 
         # INSERT INTO db new user's information
         try:
-            new_user_id = db.execute(
-                "INSERT INTO users (username, hash, register_date) VALUES(?, ?, ?)", username, hash, register_date)
-        except:
+            new_user = User(
+                username=username,
+                hash=hash,
+                register_date=register_date
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            # new_user_id = db.execute(
+            #     "INSERT INTO users (username, hash, register_date) VALUES(?, ?, ?)", username, hash, register_date)
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Ooops! An error has been occured! (r-signup-#5)")
 
         # Log the user in
-        session["user_id"] = new_user_id
+        session["user_id"] = new_user.id
 
         # Flash user with welcoming message!
         flash(f"Welcome, {username}!")
@@ -1590,7 +1711,10 @@ def vehicles():
     try:
         user_db = User.query.filter_by(id=user_id).first()
         # user_db = db.execute("SELECT * FROM users WHERE id=?", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     if not user_db:
@@ -1627,12 +1751,26 @@ def vehicles():
         #     "WHERE vehicles.user_id=? "
         #     "GROUP BY vehicles.id "
         #     "ORDER BY vehicles.id", user_id)
-    except:
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
     # vehicles_db = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
 
     # length of vehicles list
     veh_length = len(vehicles_db)
+    try:
+        user_vehicles_db = (
+            db.session.query(Vehicle).filter(Vehicle.user_id == user_id).all()
+        )
+        # user_vehicles_db = db.execute(
+        #     "SELECT * FROM vehicles WHERE user_id=?", user_id)
+    except Exception as err:
+        print(f"An error OCCCCCUUURED: {str(err)}")
+        import traceback
+        traceback.print_exc()
+        return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
     # query user's currency
     # currency_db = db.execute(
@@ -1648,29 +1786,34 @@ def vehicles():
         if not vehicle_name:
             return errorMsg("Must provide name for a vehicle")
 
-        # ? ncortex
         if vehicle_name.startswith(" "):
             return errorMsg("Vehicle name can not start with space character(s)")
         if vehicle_name.endswith(" "):
             return errorMsg("Vehicle name can not end with space character(s)")
 
-        # ! check if this works fine
-        # ? may be same veh. name should be allowed if
-        # check if vehicle name already exist for the same user
-        if len(vehicles_db) > 0:
-            for i in range(len(vehicles_db)):
-                if vehicles_db[i].name == vehicle_name:
-                    return errorMsg("Vehicle's name must be unique!")
-
         # license plate number submitted by user
         license_plate = request.form.get("plate")
         if not license_plate:
             license_plate = ''
-        # ? ncortex
+
         if license_plate.startswith(" "):
             return errorMsg("Vehicle name can not start with space character(s)")
         if license_plate.endswith(" "):
             return errorMsg("Vehicle name can not end with space character(s)")
+
+        # ! check if this works fine
+        # ? may be same veh. name should be allowed if
+        # check if vehicle name already exist for the same user
+        # if len(vehicles_db) > 0:
+        #     for i in range(len(vehicles_db)):
+        #         if vehicles_db[i].name == vehicle_name:
+        #             return errorMsg("Vehicle's name must be unique!")
+        if len(user_vehicles_db) > 0:
+            for i in range(len(user_vehicles_db)):
+                # if name already exists and license plates are also the same
+                if user_vehicles_db[i].name == vehicle_name.strip().lower() and user_vehicles_db[i].license_plate.strip().lower() == license_plate.strip().lower():
+                    flash("This vehicle already exists.")
+                    return render_template("vehicles.html", vehicles=vehicles_db, veh_len=veh_length, symbol=currency_symbol, distance_unit=distance_unit, volume_unit=volume_unit)
 
         # retrieve current local date & time
         # date_db = db.execute("SELECT NOW() AS now")
@@ -1689,7 +1832,10 @@ def vehicles():
             #            vehicle_name, license_plate, date, user_id)
             db.session.add(new_vehicle)
             db.session.commit()
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Ooops! An error has been occured :(")
 
         # select updated version of data
@@ -1716,7 +1862,10 @@ def vehicles():
             #     "WHERE vehicles.user_id=? "
             #     "GROUP BY vehicles.id "
             #     "ORDER BY vehicles.id", user_id)
-        except:
+        except Exception as err:
+            print(f"An error OCCCCCUUURED: {str(err)}")
+            import traceback
+            traceback.print_exc()
             return errorMsg("Could not retrieve data from server. Please refresh the page.")
         # vehicles_db_uptd = db.execute("SELECT *, SUM(volume) AS liters, SUM(total_price) AS expenses FROM vehicles LEFT JOIN refuels ON vehicles.id = refuels.vehicle_id WHERE vehicles.user_id=? GROUP BY vehicles.id ORDER BY vehicles.id", session["user_id"])
 
