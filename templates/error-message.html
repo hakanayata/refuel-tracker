@@ -1,14 +1,12 @@
-{% extends "layout.html" %}
-
-{% block title %}
-Error
-{% endblock %}
-
-{% block main %}
+{% extends "layout.html" %} {% block title %} Error {% endblock %} {% block main
+%}
 
 <div class="container mx-auto my-5">
     <h1 class="text-danger">ERROR</h1>
-    <h2 class="text-info mt-5">{{ message }}</h2>
+    <h2 class="text-info my-5">{{ message }}</h2>
+    <div class="d-grid gap-2 d-md-block mx-auto">
+        <a class="btn btn-primary" href="/">Go Home</a>
+    </div>
 </div>
 
 {% endblock %}

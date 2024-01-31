@@ -3,7 +3,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     if (dateCells) {
         for (let i = 0; i < dateCells.length; i++) {
-            dateCells[i].innerHTML = new Date(`${dateCells[i].innerHTML}`).toLocaleString().slice(0, -3).replace(",", " |")
+            dateCells[i].innerHTML = new Date(`${dateCells[i].innerHTML}Z`).toLocaleString().slice(0, -3).replace(",", " |")
         }
     }
 
