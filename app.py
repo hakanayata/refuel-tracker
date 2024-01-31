@@ -1181,8 +1181,13 @@ def editVehicle(id):
     user_id = session["user_id"]
     # query for vehicle to be edited
     try:
-        vehicle_db = db.execute(
-            "SELECT name, license_plate FROM vehicles WHERE user_id=? AND id=?", user_id, id)
+        vehicle_db = (
+            db.session.query(Vehicle.name, Vehicle.license_plate)
+            .filter(Vehicle.user_id == user_id, Vehicle.id == id)
+            .first()
+        )
+        # vehicle_db = db.execute(
+        #     "SELECT name, license_plate FROM vehicles WHERE user_id=? AND id=?", user_id, id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
@@ -1193,12 +1198,15 @@ def editVehicle(id):
         return errorMsg("Vehicle could not be found in your list! :(")
 
     # current name of the vehicle, user might keep the name, this is used in name check below
-    current_vehicle_name = vehicle_db[0]['name']
+    current_vehicle_name = vehicle_db.name
 
-    # every vehicle from user, used in name check below
+    # every vehicle from user. This will be used in name check below
     try:
-        user_vehicles_db = db.execute(
-            "SELECT * FROM vehicles WHERE user_id=?", user_id)
+        user_vehicles_db = (
+            db.session.query(Vehicle).filter(Vehicle.user_id == user_id).all()
+        )
+        # user_vehicles_db = db.execute(
+        #     "SELECT * FROM vehicles WHERE user_id=?", user_id)
     except:
         return errorMsg("Could not retrieve data from server. Please refresh the page.")
 
@@ -1218,30 +1226,40 @@ def editVehicle(id):
         if vehicle_name.endswith(" "):
             return errorMsg("Vehicle name can not end with space character(s)")
 
-        # ! check if this works fine
-        # check if vehicle name already exist for the same user EXCEPT FOR FORMER VEHICLE NAME
-        if len(user_vehicles_db) > 1:
-            for i in range(len(user_vehicles_db)):
-                if user_vehicles_db[i]["name"] == vehicle_name:
-                    if current_vehicle_name == vehicle_name:
-                        break
-                    else:
-                        return errorMsg("Vehicle's name must be unique!")
-
         # license plate number submitted by user
         license_plate = request.form.get("plate")
         if not license_plate:
             license_plate = ''
+
         # ? ncortex
         if license_plate.startswith(" "):
             return errorMsg("Vehicle name can not start with space character(s)")
         if license_plate.endswith(" "):
             return errorMsg("Vehicle name can not end with space character(s)")
 
+        # ! check if this works fine
+        # check if vehicle name already exists for the same user EXCEPT FOR FORMER VEHICLE NAME
+        if len(user_vehicles_db) > 1:
+            for i in range(len(user_vehicles_db)):
+                # if name already exists and license plates are also the same
+                if user_vehicles_db[i].name == vehicle_name.strip().lower() and user_vehicles_db[i].license_plate.strip().lower() == license_plate.strip().lower():
+                    # it should yield an error if license plates are also the same
+                    flash("This vehicle already exists.")
+                    return render_template("edit-vehicle.html", vehicle=vehicle_db, id=id)
+                else:
+                    break
+
         # update database
         try:
-            db.execute("UPDATE vehicles SET name=?, license_plate=? WHERE user_id=? AND id=?",
-                       vehicle_name, license_plate, user_id, id)
+            db.session.query(Vehicle).filter(Vehicle.user_id == user_id, Vehicle.id == id).update(
+                {
+                    'name': vehicle_name,
+                    'license_plate': license_plate,
+                }
+            )
+            db.session.commit()
+            # db.execute("UPDATE vehicles SET name=?, license_plate=? WHERE user_id=? AND id=?",
+            #            vehicle_name, license_plate, user_id, id)
             # * vehicle_name removed from refuel table
             # db.execute(
             #     "UPDATE refuels SET vehicle_name=? WHERE vehicle_id=?", vehicle_name, id)
