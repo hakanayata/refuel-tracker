@@ -1334,8 +1334,9 @@ def editVehicle(id):
             return render_template("edit-vehicle.html", vehicle=vehicle_db, id=id)
 
         # check if user tries to give the same name and the same l.plate for another vehicle
-        if len(user_vehicles_db) > 1:
-            for i in range(len(user_vehicles_db)):
+        user_vehicles_db_len = len(user_vehicles_db)
+        if user_vehicles_db_len > 1:
+            for i in range(user_vehicles_db_len):
                 # if name already exists and license plates are also the same
                 if user_vehicles_db[i].name == vehicle_name.strip().lower() and user_vehicles_db[i].license_plate.strip().lower() == license_plate.strip().lower():
                     flash("This vehicle already exists.")
@@ -1809,8 +1810,9 @@ def vehicles():
         #     for i in range(len(vehicles_db)):
         #         if vehicles_db[i].name == vehicle_name:
         #             return errorMsg("Vehicle's name must be unique!")
-        if len(user_vehicles_db) > 0:
-            for i in range(len(user_vehicles_db)):
+        user_vehicles_db_len = len(user_vehicles_db)
+        if user_vehicles_db_len > 0:
+            for i in range(user_vehicles_db_len):
                 # if name already exists and license plates are also the same
                 if user_vehicles_db[i].name == vehicle_name.strip().lower() and user_vehicles_db[i].license_plate.strip().lower() == license_plate.strip().lower():
                     flash("This vehicle already exists.")
