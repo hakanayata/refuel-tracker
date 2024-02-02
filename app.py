@@ -98,32 +98,6 @@ with app.app_context():
 
 # ***** CONFIGURING ENDS HERE *****
 
-# ? FEATURES TO ADD ?
-# • date filter history
-# • date filter graph
-# • car share
-
-# X todo: retrieve username as value (not placeholder) on change-username.html page
-# X todo: set char limit for names (vehicle, license plate, username)
-# X todo: set limit for odometer, volume, unit price
-# X todo: show local time on edit
-# X todo: print should show table borders
-# X todo: set default units to EUR and lt
-# X todo: if vehicles >= 2, make seperate tables for each vehicle on history page?
-# X todo: add grand total row to the stats table on home page for users who have multiple vehicles.
-# x todo: edit page: if user comes from history page, they should be redirected to the history page after editing
-# x todo: add js validation on change-password, change-username pages
-# x todo: add ORM
-# todo: edit page: add cancel button to go back
-# todo: database: refuels table, change distance -> odometer
-# todo: history page: add pagination
-# todo: history page: show individual grand total row for each vehicle table.
-# todo: index & edit & history: when there are vehicles that share the same name, show plate number next to them
-
-# ! add minlength and maxlength to password fields on html pages.
-# ! check if vehicle name exist - use strip so that user can't name his cars 'smart' and 'smart '
-# ? chart date filter
-# ? total distance traveled stat on vehicles page
 
 
 @app.after_request
